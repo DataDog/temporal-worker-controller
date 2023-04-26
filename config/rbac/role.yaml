@@ -1,0 +1,44 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role
+rules:
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - temporal.io.temporal.io
+  resources:
+  - workerdeployments
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - temporal.io.temporal.io
+  resources:
+  - workerdeployments/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - temporal.io.temporal.io
+  resources:
+  - workerdeployments/status
+  verbs:
+  - get
+  - patch
+  - update
