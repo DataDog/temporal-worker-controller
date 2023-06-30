@@ -23,7 +23,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"go.temporal.io/api/enums/v1"
-	"go.temporal.io/api/taskqueue/v1"
 	"go.temporal.io/api/workflowservice/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
@@ -114,26 +113,33 @@ func (r *WorkerDeploymentReconciler) generateStatus(ctx context.Context, req ctr
 		}
 	}
 
-	// TODO(jlegrone): figure out if this is necessary
-	partitions, err := r.WorkflowServiceClient.ListTaskQueuePartitions(ctx, &workflowservice.ListTaskQueuePartitionsRequest{
+	// Get all task queue version sets via Temporal API
+	var (
+		allBuildIDs, majorBuildIDs []string
+	)
+	setsResponse, err := r.WorkflowServiceClient.GetWorkerBuildIdCompatibility(ctx, &workflowservice.GetWorkerBuildIdCompatibilityRequest{
 		Namespace: workerDeploy.Spec.WorkerOptions.TemporalNamespace,
-		TaskQueue: &taskqueue.TaskQueue{
-			Name: workerDeploy.Spec.WorkerOptions.TaskQueue,
-			Kind: enums.TASK_QUEUE_KIND_NORMAL,
-		},
+		TaskQueue: workerDeploy.Spec.WorkerOptions.TaskQueue,
+		MaxSets:   0, // 0 returns all sets.
 	})
 	if err != nil {
-		l.Error(err, "unable to list task queue partitions")
+		l.Error(err, "unable to get worker version sets")
+		return temporaliov1alpha1.WorkerDeploymentStatus{}, err
 	}
-	for _, p := range partitions.GetWorkflowTaskQueuePartitions() {
-		p.GetKey()
-		p.GetOwnerHostName()
+	for _, majorVersionSet := range setsResponse.GetMajorVersionSets() {
+		if ids := majorVersionSet.GetBuildIds(); len(ids) > 0 {
+			allBuildIDs = append(allBuildIDs, ids...)
+			// The last build ID represents the current default for the major version set.
+			majorBuildIDs = append(majorBuildIDs, ids[len(ids)-1])
+		}
 	}
 
-	// Get task queue partitions via Temporal API
+	// Get build ID reachability via Temporal API
+	reachableBuildIDs := map[string]struct{}{}
 	reachability, err := r.WorkflowServiceClient.GetWorkerTaskReachability(ctx, &workflowservice.GetWorkerTaskReachabilityRequest{
-		Namespace:    workerDeploy.Spec.WorkerOptions.TemporalNamespace,
-		BuildIds:     nil, // TODO(jlegrone): pass in build IDs
+		Namespace: workerDeploy.Spec.WorkerOptions.TemporalNamespace,
+		// TODO(jlegrone): Add guard or implement pagination if list of build IDs is larger than server limit
+		BuildIds:     allBuildIDs,
 		TaskQueues:   []string{workerDeploy.Spec.WorkerOptions.TaskQueue},
 		Reachability: enums.TASK_REACHABILITY_NEW_WORKFLOWS,
 	})
@@ -149,13 +155,24 @@ func (r *WorkerDeploymentReconciler) generateStatus(ctx context.Context, req ctr
 
 			for _, reachabilityType := range tqr.GetReachability() {
 				switch reachabilityType {
-				case enums.TASK_REACHABILITY_NEW_WORKFLOWS:
-				case enums.TASK_REACHABILITY_EXISTING_WORKFLOWS:
-				case enums.TASK_REACHABILITY_OPEN_WORKFLOWS:
-				case enums.TASK_REACHABILITY_CLOSED_WORKFLOWS:
+				case enums.TASK_REACHABILITY_NEW_WORKFLOWS,
+					enums.TASK_REACHABILITY_EXISTING_WORKFLOWS,
+					enums.TASK_REACHABILITY_OPEN_WORKFLOWS,
+					enums.TASK_REACHABILITY_CLOSED_WORKFLOWS:
+					reachableBuildIDs[r.GetBuildId()] = struct{}{}
 				default:
 					// TODO(jlegrone): fail or emit an error log for unhandled reachability status
 				}
+			}
+		}
+	}
+
+	// Find all unreachable deployments
+	var unreachableDeployments []int
+	for _, buildID := range allBuildIDs {
+		if _, ok := reachableBuildIDs[buildID]; !ok {
+			if deploymentIndex, ok := buildIDsToDeployments[buildID]; ok {
+				unreachableDeployments = append(unreachableDeployments, deploymentIndex)
 			}
 		}
 	}
