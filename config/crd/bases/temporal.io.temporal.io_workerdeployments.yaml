@@ -7599,15 +7599,29 @@ spec:
                     type: object
                     x-kubernetes-map-type: atomic
                   defaultBuildID:
+                    description: The default build ID currently registered with Temporal.
+                    type: string
+                  deployedBuildID:
+                    description: "The build ID associated with the version set's current
+                      deployment. \n This should usually align with the DefaultBuildID,
+                      but may be different in cases where the version set has been
+                      recently updated or frozen."
                     type: string
                   inactiveBuildIDs:
+                    description: Build IDs that were previously registered as the
+                      default.
                     items:
                       type: string
                     type: array
                   reachabilityStatus:
+                    description: 'ReachabilityStatus indicates whether workers in
+                      this version set may be eligible to receive tasks from the Temporal
+                      server. TODO(jlegrone): Make this an enum, and consider whether
+                      multiple values are needed.'
                     type: string
                 required:
                 - defaultBuildID
+                - deployedBuildID
                 - reachabilityStatus
                 type: object
               deprecatedVersionSets:
@@ -7652,15 +7666,30 @@ spec:
                       type: object
                       x-kubernetes-map-type: atomic
                     defaultBuildID:
+                      description: The default build ID currently registered with
+                        Temporal.
+                      type: string
+                    deployedBuildID:
+                      description: "The build ID associated with the version set's
+                        current deployment. \n This should usually align with the
+                        DefaultBuildID, but may be different in cases where the version
+                        set has been recently updated or frozen."
                       type: string
                     inactiveBuildIDs:
+                      description: Build IDs that were previously registered as the
+                        default.
                       items:
                         type: string
                       type: array
                     reachabilityStatus:
+                      description: 'ReachabilityStatus indicates whether workers in
+                        this version set may be eligible to receive tasks from the
+                        Temporal server. TODO(jlegrone): Make this an enum, and consider
+                        whether multiple values are needed.'
                       type: string
                   required:
                   - defaultBuildID
+                  - deployedBuildID
                   - reachabilityStatus
                   type: object
                 type: array

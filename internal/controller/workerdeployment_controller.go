@@ -96,11 +96,13 @@ func (r *WorkerDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Req
 }
 
 func (r *WorkerDeploymentReconciler) generateStatus(ctx context.Context, req ctrl.Request, l logr.Logger, workerDeploy temporaliov1alpha1.WorkerDeployment) (temporaliov1alpha1.WorkerDeploymentStatus, error) {
+	var status temporaliov1alpha1.WorkerDeploymentStatus
+
 	// Get managed worker deployments
 	var childDeploys appsv1.DeploymentList
 	if err := r.List(ctx, &childDeploys, client.InNamespace(req.Namespace), client.MatchingFields{deployOwnerKey: req.Name}); err != nil {
 		l.Error(err, "unable to list child Deployments")
-		return temporaliov1alpha1.WorkerDeploymentStatus{}, err
+		return status, err
 	}
 
 	// Gather build IDs for each managed deployment
@@ -114,9 +116,7 @@ func (r *WorkerDeploymentReconciler) generateStatus(ctx context.Context, req ctr
 	}
 
 	// Get all task queue version sets via Temporal API
-	var (
-		allBuildIDs, majorBuildIDs []string
-	)
+	var allBuildIDs []string
 	setsResponse, err := r.WorkflowServiceClient.GetWorkerBuildIdCompatibility(ctx, &workflowservice.GetWorkerBuildIdCompatibilityRequest{
 		Namespace: workerDeploy.Spec.WorkerOptions.TemporalNamespace,
 		TaskQueue: workerDeploy.Spec.WorkerOptions.TaskQueue,
@@ -124,13 +124,48 @@ func (r *WorkerDeploymentReconciler) generateStatus(ctx context.Context, req ctr
 	})
 	if err != nil {
 		l.Error(err, "unable to get worker version sets")
-		return temporaliov1alpha1.WorkerDeploymentStatus{}, err
+		return status, err
 	}
-	for _, majorVersionSet := range setsResponse.GetMajorVersionSets() {
-		if ids := majorVersionSet.GetBuildIds(); len(ids) > 0 {
+	for i, majorVersionSet := range setsResponse.GetMajorVersionSets() {
+		ids := majorVersionSet.GetBuildIds()
+		if len(ids) > 0 {
+			var (
+				deploymentRef   *v1.ObjectReference
+				deployedBuildID string
+			)
+			for _, buildID := range ids {
+				if deploymentIndex, ok := buildIDsToDeployments[buildID]; ok {
+					d := childDeploys.Items[deploymentIndex]
+					// TODO(jlegrone): Handle case where multiple deployments might exist for major version set, eg.
+					//                 due to an out of band major version set merge.
+					deploymentRef = &v1.ObjectReference{
+						Kind:            d.Kind,
+						Namespace:       d.Namespace,
+						Name:            d.Name,
+						UID:             d.UID,
+						APIVersion:      d.APIVersion,
+						ResourceVersion: d.ResourceVersion,
+					}
+					deployedBuildID = buildID
+				}
+			}
+
+			set := temporaliov1alpha1.CompatibleVersionSet{
+				ReachabilityStatus: "", // populated further down in the function
+				DeployedBuildID:    deployedBuildID,
+				DefaultBuildID:     ids[len(ids)-1],
+				InactiveBuildIDs:   ids[:len(ids)-1],
+				Deployment:         deploymentRef,
+			}
+
+			// Note default major version set -- this is the last item in the list.
+			if i == len(setsResponse.GetMajorVersionSets())-1 {
+				status.DefaultVersionSet = set
+			} else {
+				status.DeprecatedVersionSets = append(status.DeprecatedVersionSets, set)
+			}
+
 			allBuildIDs = append(allBuildIDs, ids...)
-			// The last build ID represents the current default for the major version set.
-			majorBuildIDs = append(majorBuildIDs, ids[len(ids)-1])
 		}
 	}
 
@@ -167,18 +202,30 @@ func (r *WorkerDeploymentReconciler) generateStatus(ctx context.Context, req ctr
 		}
 	}
 
-	// Find all unreachable deployments
-	var unreachableDeployments []int
-	for _, buildID := range allBuildIDs {
-		if _, ok := reachableBuildIDs[buildID]; !ok {
-			if deploymentIndex, ok := buildIDsToDeployments[buildID]; ok {
-				unreachableDeployments = append(unreachableDeployments, deploymentIndex)
-			}
+	if isReachable(status.DefaultVersionSet, reachableBuildIDs) {
+		status.DefaultVersionSet.ReachabilityStatus = "reachable"
+	}
+	for _, versionSet := range status.DeprecatedVersionSets {
+		if isReachable(versionSet, reachableBuildIDs) {
+			versionSet.ReachabilityStatus = "reachable"
 		}
 	}
 
-	// TODO(jlegrone): fill in the status
-	return temporaliov1alpha1.WorkerDeploymentStatus{}, nil
+	return status, nil
+}
+
+func isReachable(versionSet temporaliov1alpha1.CompatibleVersionSet, reachableBuildIDs map[string]struct{}) bool {
+	// Exit early if default version is reachable
+	if _, ok := reachableBuildIDs[versionSet.DefaultBuildID]; ok {
+		return true
+	}
+	// Check if any non-default build IDs are still reachable
+	for _, buildID := range versionSet.InactiveBuildIDs {
+		if _, ok := reachableBuildIDs[buildID]; ok {
+			return true
+		}
+	}
+	return false
 }
 
 type Plan struct {

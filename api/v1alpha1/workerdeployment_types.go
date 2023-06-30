@@ -53,9 +53,19 @@ type WorkerDeploymentSpec struct {
 }
 
 type CompatibleVersionSet struct {
-	ReachabilityStatus string   `json:"reachabilityStatus"`
-	DefaultBuildID     string   `json:"defaultBuildID"`
-	InactiveBuildIDs   []string `json:"inactiveBuildIDs,omitempty"`
+	// ReachabilityStatus indicates whether workers in this version set may
+	// be eligible to receive tasks from the Temporal server.
+	// TODO(jlegrone): Make this an enum, and consider whether multiple values are needed.
+	ReachabilityStatus string `json:"reachabilityStatus"`
+	// Build IDs that were previously registered as the default.
+	InactiveBuildIDs []string `json:"inactiveBuildIDs,omitempty"`
+	// The default build ID currently registered with Temporal.
+	DefaultBuildID string `json:"defaultBuildID"`
+	// The build ID associated with the version set's current deployment.
+	//
+	// This should usually align with the DefaultBuildID, but may be different
+	// in cases where the version set has been recently updated or frozen.
+	DeployedBuildID string `json:"deployedBuildID"`
 	// A pointer to the version set's managed deployment.
 	Deployment *v1.ObjectReference `json:"active,omitempty"`
 }
