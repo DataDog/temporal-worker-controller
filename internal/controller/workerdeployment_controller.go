@@ -271,7 +271,6 @@ func generatePlan(
 		plan.CreateDeployment = &appsv1.Deployment{
 			TypeMeta: metav1.TypeMeta{},
 			ObjectMeta: metav1.ObjectMeta{
-				// TODO(jlegrone): Build ID in name might need to be shortened to fit k8s length constraints
 				Name:                       fmt.Sprintf("%s-%s", ref.Name, desiredBuildID),
 				Namespace:                  ref.Namespace,
 				ResourceVersion:            "",
