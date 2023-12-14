@@ -1,27 +1,27 @@
-# permissions for end users to view workerdeployments.
+# permissions for end users to view temporalworkers.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
     app.kubernetes.io/name: clusterrole
-    app.kubernetes.io/instance: workerdeployment-viewer-role
+    app.kubernetes.io/instance: temporalworker-viewer-role
     app.kubernetes.io/component: rbac
     app.kubernetes.io/created-by: worker-controller
     app.kubernetes.io/part-of: worker-controller
     app.kubernetes.io/managed-by: kustomize
-  name: workerdeployment-viewer-role
+  name: temporalworker-viewer-role
 rules:
 - apiGroups:
-  - temporal.io.temporal.io
+  - temporal.io
   resources:
-  - workerdeployments
+  - temporalworkers
   verbs:
   - get
   - list
   - watch
 - apiGroups:
-  - temporal.io.temporal.io
+  - temporal.io
   resources:
-  - workerdeployments/status
+  - temporalworkers/status
   verbs:
   - get

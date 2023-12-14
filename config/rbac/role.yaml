@@ -17,9 +17,9 @@ rules:
   - update
   - watch
 - apiGroups:
-  - temporal.io.temporal.io
+  - temporal.io
   resources:
-  - workerdeployments
+  - temporalworkers
   verbs:
   - create
   - delete
@@ -29,15 +29,15 @@ rules:
   - update
   - watch
 - apiGroups:
-  - temporal.io.temporal.io
+  - temporal.io
   resources:
-  - workerdeployments/finalizers
+  - temporalworkers/finalizers
   verbs:
   - update
 - apiGroups:
-  - temporal.io.temporal.io
+  - temporal.io
   resources:
-  - workerdeployments/status
+  - temporalworkers/status
   verbs:
   - get
   - patch

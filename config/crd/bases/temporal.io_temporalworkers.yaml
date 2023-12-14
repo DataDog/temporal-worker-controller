@@ -17,8 +17,8 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: "TemporalWorker is the Schema for the temporalworkers API
-          \n TODO(jlegrone): Implement default/validate interface https://book.kubebuilder.io/cronjob-tutorial/webhook-implementation.html"
+        description: "TemporalWorker is the Schema for the temporalworkers API \n
+          TODO(jlegrone): Implement default/validate interface https://book.kubebuilder.io/cronjob-tutorial/webhook-implementation.html"
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation

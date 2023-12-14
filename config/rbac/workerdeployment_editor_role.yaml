@@ -1,20 +1,20 @@
-# permissions for end users to edit workerdeployments.
+# permissions for end users to edit temporalworkers.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
     app.kubernetes.io/name: clusterrole
-    app.kubernetes.io/instance: workerdeployment-editor-role
+    app.kubernetes.io/instance: temporalworker-editor-role
     app.kubernetes.io/component: rbac
     app.kubernetes.io/created-by: worker-controller
     app.kubernetes.io/part-of: worker-controller
     app.kubernetes.io/managed-by: kustomize
-  name: workerdeployment-editor-role
+  name: temporalworker-editor-role
 rules:
 - apiGroups:
-  - temporal.io.temporal.io
+  - temporal.io
   resources:
-  - workerdeployments
+  - temporalworkers
   verbs:
   - create
   - delete
@@ -24,8 +24,8 @@ rules:
   - update
   - watch
 - apiGroups:
-  - temporal.io.temporal.io
+  - temporal.io
   resources:
-  - workerdeployments/status
+  - temporalworkers/status
   verbs:
   - get

@@ -1,19 +1,3 @@
-/*
-Copyright 2023.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package main
 
 import (
@@ -30,6 +14,9 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+
+	"go.temporal.io/sdk/client"
 
 	temporaliov1alpha1 "github.com/temporalio/worker-controller/api/v1alpha1"
 	"github.com/temporalio/worker-controller/internal/controller"
@@ -66,12 +53,18 @@ func main() {
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                 scheme,
-		MetricsBindAddress:     metricsAddr,
-		Port:                   9443,
-		HealthProbeBindAddress: probeAddr,
-		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "98e39f52.temporal.io",
+		Scheme: scheme,
+		Metrics: metricsserver.Options{
+			BindAddress: "0",
+		},
+		HealthProbeBindAddress: "0",
+		//Metrics: metricsserver.Options{
+		//	BindAddress: metricsAddr,
+		//},
+		//HealthProbeBindAddress: probeAddr,
+		//Port:                   9443,
+		LeaderElection:   enableLeaderElection,
+		LeaderElectionID: "98e39f52.temporal.io",
 		// LeaderElectionReleaseOnCancel defines if the leader should step down voluntarily
 		// when the Manager ends. This requires the binary to immediately end when the
 		// Manager is stopped, otherwise, this setting is unsafe. Setting this significantly
@@ -89,11 +82,22 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controller.WorkerDeploymentReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+	// TODO(jlegrone): Remove hardcoded client config & support multiple temporal namespaces.
+	temporalClient, err := client.Dial(client.Options{
+		HostPort:  "localhost:7233",
+		Namespace: "default",
+	})
+	if err != nil {
+		setupLog.Error(err, "unable to create temporal client")
+		os.Exit(1)
+	}
+
+	if err = (&controller.TemporalWorkerReconciler{
+		Client:                mgr.GetClient(),
+		Scheme:                mgr.GetScheme(),
+		WorkflowServiceClient: temporalClient.WorkflowService(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "WorkerDeployment")
+		setupLog.Error(err, "unable to create controller", "controller", "TemporalWorker")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder

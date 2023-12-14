@@ -2,8 +2,8 @@
 
 > ⚠️ This project is 100% experimental. Please do not attempt to install the controller in any production and/or shared environment.
 
-The goal of the Temporal Worker Controller is to make it easy to run workers on Kubernetes while leveraging task queue
-version partitions.
+The goal of the Temporal Worker Controller is to make it easy to run workers on Kubernetes while leveraging
+[Worker Versioning](https://docs.temporal.io/workers#worker-versioning).
 
 ## Why
 
@@ -15,21 +15,21 @@ The traditional approach to workflow determinism is to gate new behavior behind
 source of technical debt, as safely removing them from a codebase is a careful process that often involves querying all
 running workflows.
 
-[Worker Versioning](https://docs.temporal.io/workers#worker-versioning) introduces an alternative approach which enables
+Worker Versioning is an alternative approach which enables
 workflow executions to be sticky to workers running a specific code revision. This allows a workflow author
 to omit version checks in code and instead run multiple versions of their worker in parallel, relying on Temporal to
 keep workflow executions pinned to workers running compatible code.
 
 This project aims to provide automation which simplifies the bookkeeping around tracking which worker versions still
 have active workflows, managing the lifecycle of versioned worker deployments, and calling Temporal APIs to update task
-queue partitions when new versions are rolled out.
+queue version sets when workers are updated.
 
 ## Features
 
-- [ ] Registration of new task queue version sets
-- [ ] Creation of versioned worker deployment resources
-- [ ] Deletion of unreachable versioned worker deployments
-- [ ] Autoscaling of versioned worker deployments
+- [x] Registration of new task queue version sets
+- [x] Creation of versioned worker deployment resources
+- [x] Deletion of unreachable worker deployments
+- [ ] Autoscaling of worker deployments
 - [ ] Automated merging of compatible version sets
 - [ ] Optional cancellation after timeout for workflows on old version sets
 - [ ] Passing `ContinueAsNew` signal to workflows on old version sets
@@ -44,16 +44,16 @@ variables:
 - `TEMPORAL_NAMESPACE`
 
 Each of these will be automatically set in the pod template's env, and do not need to be manually specified outside the
-`WorkerDeployment` spec.
+`TemporalWorker` spec.
 
 ## How It Works
 
-Every `WorkerDeployment` resource manages one or more standard `Deployment` resources. Each deployment manages pods
-which in turn poll Temporal for tasks in their respective task queue version partitions.
+Every `TemporalWorker` resource manages one or more standard `Deployment` resources. Each deployment manages pods
+which in turn poll Temporal for tasks in their respective version sets.
 
 ```mermaid
 flowchart TD
-    wd[WorkerDeployment]
+    wd[TemporalWorker]
 
     subgraph "Latest/default worker version"
         d5["Deployment v5"]
@@ -83,12 +83,12 @@ flowchart TD
     wd --> dN
     wd --> d5
 
-    p1a -. "poll partition v1" .-> server
-    p1b -. "poll partition v1" .-> server
+    p1a -. "poll version v1" .-> server
+    p1b -. "poll version v1" .-> server
 
-    p5a -. "poll partition v5" .-> server
-    p5b -. "poll partition v5" .-> server
-    p5c -. "poll partition v5" .-> server
+    p5a -. "poll version v5" .-> server
+    p5b -. "poll version v5" .-> server
+    p5c -. "poll version v5" .-> server
 
     server["Temporal Server"]
 ```
@@ -96,7 +96,7 @@ flowchart TD
 ### Worker Lifecycle
 
 When a new worker version is deployed, the worker controller automates the registration of a new default task queue
-partition in Temporal.
+version set in Temporal.
 
 As older workflows finish executing and deprecated worker versions are no longer needed, the worker controller also
 frees up resources by deleting old deployments.
@@ -109,12 +109,12 @@ sequenceDiagram
     participant Ctl as WorkerController
     participant T as Temporal
 
-    Dev->>K8s: Create WorkerDeployment "foo" (v1)
-    K8s-->>Ctl: Notify WorkerDeployment "foo" created
+    Dev->>K8s: Create TemporalWorker "foo" (v1)
+    K8s-->>Ctl: Notify TemporalWorker "foo" created
     Ctl->>K8s: Create Deployment "foo-v1"
     Ctl->>T: Register v1 as new default set
-    Dev->>K8s: Update WorkerDeployment "foo" (v2)
-    K8s-->>Ctl: Notify WorkerDeployment "foo" updated
+    Dev->>K8s: Update TemporalWorker "foo" (v2)
+    K8s-->>Ctl: Notify TemporalWorker "foo" updated
     Ctl->>K8s: Create Deployment "foo-v2"
     Ctl->>T: Register v2 as new default set
     
@@ -130,7 +130,9 @@ sequenceDiagram
 
 ## Contributing
 
-This project is in very early stages and is not yet soliciting external contributions.
+This project is in very early stages; as such external code contributions are not yet being solicited.
 
-Please reach out to `@jlegrone` on the [Temporal Slack](https://t.mp/slack) if you have questions, suggestions, or are
-interested in contributing.
+Bug reports and feature requests are welcome! Please [file an issue](https://github.com/jlegrone/worker-controller/issues/new).
+
+You may also reach out to `@jlegrone` on the [Temporal Slack](https://t.mp/slack) if you have questions, suggestions, or are
+interested in making other contributions.

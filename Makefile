@@ -52,6 +52,39 @@ manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and Cust
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
+.PHONY: start-sample-workflow
+start-sample-workflow: ## Start a sample workflow.
+	$(TEMPORAL) workflow start --type "hello_world" --task-queue "hello_world"
+
+.PHONY: apply-load-sample-workflow
+apply-load-sample-workflow: ## Start a sample workflow every 15 seconds
+	watch --interval 15 -- $(TEMPORAL) workflow start --type "hello_world" --task-queue "hello_world"
+
+.PHONY: list-workflow-build-ids
+list-workflow-build-ids: ## List workflow executions and their build IDs.
+	@$(TEMPORAL) workflow list --limit 20 --fields SearchAttributes -o json | \
+		jq '.[] | {buildID: .search_attributes.indexed_fields.BuildIds.data, workflowID: .execution.workflow_id, closeTime: .close_time, status}' | \
+		jq '.buildID |= @base64d' | \
+		jq -r '[.workflowID, .buildID, .status, .closeTime] | @tsv'
+
+.PHONY: build-sample-worker
+build-sample-worker: ## Build the sample worker container image.
+	eval $(minikube docker-env) && $(CONTAINER_TOOL) build --load -t worker-controller/sample-worker:latest -f sample-worker.dockerfile .
+
+.PHONY: deploy-sample-worker
+deploy-sample-worker: build-sample-worker ## Deploy the sample worker to the cluster.
+	$(KUBECTL) apply -f internal/samples/temporal_worker.yaml
+
+.PHONY: start-temporal-server
+start-temporal-server: ## Start an ephemeral Temporal server with versioning APIs enabled.
+	$(TEMPORAL) server start-dev \
+		--dynamic-config-value frontend.workerVersioningDataAPIs=true \
+		--dynamic-config-value frontend.workerVersioningWorkflowAPIs=true \
+		--dynamic-config-value worker.buildIdScavengerEnabled=true \
+		--dynamic-config-value worker.removableBuildIdDurationSinceDefault=0.001 \
+		--dynamic-config-value frontend.reachabilityQuerySetDurationSinceDefault=0.001 \
+		--ip 0.0.0.0
+
 .PHONY: fmt
 fmt: ## Run go fmt against code.
 	go fmt ./...
@@ -110,20 +143,20 @@ endif
 
 .PHONY: install
 install: manifests kustomize ## Install CRDs into the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build config/crd | $(KUBECTL) apply -f -
+	$(KUSTOMIZE) build config/crd | $(KUBECTL) apply --context $(K8S_CONTEXT) -f -
 
 .PHONY: uninstall
 uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
-	$(KUSTOMIZE) build config/crd | $(KUBECTL) delete --ignore-not-found=$(ignore-not-found) -f -
+	$(KUSTOMIZE) build config/crd | $(KUBECTL) delete --context $(K8S_CONTEXT) --ignore-not-found=$(ignore-not-found) -f -
 
 .PHONY: deploy
 deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
-	$(KUSTOMIZE) build config/default | $(KUBECTL) apply -f -
+	$(KUSTOMIZE) build config/default | $(KUBECTL) apply --context $(K8S_CONTEXT) -f -
 
 .PHONY: undeploy
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
-	$(KUSTOMIZE) build config/default | $(KUBECTL) delete --ignore-not-found=$(ignore-not-found) -f -
+	$(KUSTOMIZE) build config/default | $(KUBECTL) delete --context $(K8S_CONTEXT) --ignore-not-found=$(ignore-not-found) -f -
 
 ##@ Build Dependencies
 
@@ -134,9 +167,11 @@ $(LOCALBIN):
 
 ## Tool Binaries
 KUBECTL ?= kubectl
+K8S_CONTEXT ?= minikube
 KUSTOMIZE ?= $(LOCALBIN)/kustomize
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 ENVTEST ?= $(LOCALBIN)/setup-envtest
+TEMPORAL ?= temporal
 
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v5.0.1
@@ -161,3 +196,6 @@ $(CONTROLLER_GEN): $(LOCALBIN)
 envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
 $(ENVTEST): $(LOCALBIN)
 	test -s $(LOCALBIN)/setup-envtest || GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
+
+# View workflows filtered by Build ID
+# http://0.0.0.0:8233/namespaces/default/workflows?query=BuildIds+IN+%28%22versioned%3A5578f87d9c%22%29
