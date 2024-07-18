@@ -9,7 +9,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	temporaliov1alpha1 "github.com/temporalio/worker-controller/api/v1alpha1"
+	temporaliov1alpha1 "github.com/DataDog/temporal-worker-controller/api/v1alpha1"
 )
 
 var (

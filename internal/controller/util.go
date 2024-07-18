@@ -3,7 +3,7 @@ package controller
 import (
 	"golang.org/x/exp/slices"
 
-	temporaliov1alpha1 "github.com/temporalio/worker-controller/api/v1alpha1"
+	temporaliov1alpha1 "github.com/DataDog/temporal-worker-controller/api/v1alpha1"
 )
 
 // groupIntoBatches splits a slice of items into batches of the given size.

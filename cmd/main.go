@@ -18,8 +18,8 @@ import (
 
 	"go.temporal.io/sdk/client"
 
-	temporaliov1alpha1 "github.com/temporalio/worker-controller/api/v1alpha1"
-	"github.com/temporalio/worker-controller/internal/controller"
+	temporaliov1alpha1 "github.com/DataDog/temporal-worker-controller/api/v1alpha1"
+	"github.com/DataDog/temporal-worker-controller/internal/controller"
 	//+kubebuilder:scaffold:imports
 )
 

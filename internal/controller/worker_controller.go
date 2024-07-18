@@ -19,8 +19,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	temporaliov1alpha1 "github.com/temporalio/worker-controller/api/v1alpha1"
-	"github.com/temporalio/worker-controller/internal/k8s.io/utils"
+	temporaliov1alpha1 "github.com/DataDog/temporal-worker-controller/api/v1alpha1"
+	"github.com/DataDog/temporal-worker-controller/internal/k8s.io/utils"
 )
 
 var (
