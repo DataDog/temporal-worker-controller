@@ -137,6 +137,21 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 	var (
 		registeredBuildIDs = make(map[string]struct{})
 	)
+
+	rules, err := r.WorkflowServiceClient.GetWorkerVersioningRules(ctx, &workflowservice.GetWorkerVersioningRulesRequest{
+		Namespace: workerDeploy.Spec.WorkerOptions.TemporalNamespace,
+		TaskQueue: workerDeploy.Spec.WorkerOptions.TaskQueue,
+	})
+	if err != nil {
+		return status, fmt.Errorf("unable to get worker versioning rules: %w", err)
+	}
+	for _, rule := range rules.GetAssignmentRules() {
+		rule.GetCreateTime()
+		rule.GetRule().GetTargetBuildId()
+		rule.GetRule().GetRamp()
+		rule.GetRule().GetPercentageRamp().GetRampPercentage()
+	}
+
 	setsResponse, err := r.WorkflowServiceClient.GetWorkerBuildIdCompatibility(ctx, &workflowservice.GetWorkerBuildIdCompatibilityRequest{
 		Namespace: workerDeploy.Spec.WorkerOptions.TemporalNamespace,
 		TaskQueue: workerDeploy.Spec.WorkerOptions.TaskQueue,
