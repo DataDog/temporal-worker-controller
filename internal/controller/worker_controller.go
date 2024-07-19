@@ -1,3 +1,7 @@
+// Unless explicitly stated otherwise all files in this repository are licensed under the MIT License.
+//
+// This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2024 Datadog, Inc.
+
 package controller
 
 import (
@@ -19,8 +23,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	temporaliov1alpha1 "github.com/temporalio/worker-controller/api/v1alpha1"
-	"github.com/temporalio/worker-controller/internal/k8s.io/utils"
+	temporaliov1alpha1 "github.com/DataDog/temporal-worker-controller/api/v1alpha1"
+	"github.com/DataDog/temporal-worker-controller/internal/k8s.io/utils"
 )
 
 var (
