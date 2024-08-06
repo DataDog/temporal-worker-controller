@@ -347,45 +347,35 @@ func getReachability(
 	temporalNamespace string,
 	taskQueue string,
 ) (reachabilityInfo, error) {
-	var (
-		result = make(reachabilityInfo)
-		// TODO(jlegrone): Make batch size configurable based on server limits
-		buildIDBatches = groupIntoBatches(buildIDs, 4)
-	)
+	result := make(reachabilityInfo)
 
-	for _, batch := range buildIDBatches {
-		reachability, err := c.GetWorkerTaskReachability(ctx, &workflowservice.GetWorkerTaskReachabilityRequest{
-			Namespace: temporalNamespace,
-			// TODO(jlegrone): Add guard or implement pagination if list of build IDs is larger than server limit
-			BuildIds:   batch,
-			TaskQueues: []string{taskQueue},
-			// Delete deployments if no workflows are open
-			Reachability: enums.TASK_REACHABILITY_OPEN_WORKFLOWS,
-			// Don't delete deployments if workflows need to be queried
-			//Reachability: enums.TASK_REACHABILITY_EXISTING_WORKFLOWS,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("unable to fetch worker task reachability: %w", err)
+	tq, err := c.DescribeTaskQueue(ctx, &workflowservice.DescribeTaskQueueRequest{
+		Namespace: temporalNamespace,
+		TaskQueue: &taskqueue.TaskQueue{
+			Name: taskQueue,
+			//Kind: 0, // defaults to "normal"
+		},
+		ReportTaskReachability: true,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("unable to describe task queue: %w", err)
+	}
+
+	for _, buildID := range buildIDs {
+		versionInfo, ok := tq.GetVersionsInfo()[buildID]
+		if !ok {
+			result[buildID] = temporaliov1alpha1.ReachabilityStatusNotRegistered
+			continue
 		}
-		for _, r := range reachability.GetBuildIdReachability() {
-			for _, tqr := range r.GetTaskQueueReachability() {
-				reachabilityTypes := tqr.GetReachability()
-				if len(reachabilityTypes) == 0 {
-					result[r.GetBuildId()] = temporaliov1alpha1.ReachabilityStatusUnreachable
-				}
-				for _, reachabilityType := range reachabilityTypes {
-					switch reachabilityType {
-					case enums.TASK_REACHABILITY_NEW_WORKFLOWS,
-						enums.TASK_REACHABILITY_EXISTING_WORKFLOWS,
-						enums.TASK_REACHABILITY_OPEN_WORKFLOWS:
-						result[r.GetBuildId()] = temporaliov1alpha1.ReachabilityStatusNew
-					case enums.TASK_REACHABILITY_CLOSED_WORKFLOWS:
-						result[r.GetBuildId()] = temporaliov1alpha1.ReachabilityStatusExisting
-					default:
-						return nil, fmt.Errorf("unhandled build id reachability: %s", reachabilityType.String())
-					}
-				}
-			}
+		switch versionInfo.GetTaskReachability() {
+		case enums.BUILD_ID_TASK_REACHABILITY_REACHABLE:
+			result[buildID] = temporaliov1alpha1.ReachabilityStatusReachable
+		case enums.BUILD_ID_TASK_REACHABILITY_CLOSED_WORKFLOWS_ONLY:
+			result[buildID] = temporaliov1alpha1.ReachabilityStatusClosedOnly
+		case enums.BUILD_ID_TASK_REACHABILITY_UNREACHABLE:
+			result[buildID] = temporaliov1alpha1.ReachabilityStatusUnreachable
+		default:
+			return nil, fmt.Errorf("unhandled build id reachability: %s", versionInfo.GetTaskReachability().String())
 		}
 	}
 
@@ -451,7 +441,7 @@ func (r *TemporalWorkerReconciler) generatePlan(
 			if d.Spec.Replicas != nil && *d.Spec.Replicas != 0 {
 				plan.ScaleDeployments[versionSet.Deployment] = 0
 			}
-		case temporaliov1alpha1.ReachabilityStatusExisting:
+		case temporaliov1alpha1.ReachabilityStatusClosedOnly:
 			// TODO(jlegrone): Compute scale based on load? Or percentage of replicas?
 			// Scale down queryable deployments
 			if d.Spec.Replicas != nil && *d.Spec.Replicas != 1 {
@@ -488,8 +478,8 @@ func (r *TemporalWorkerReconciler) generatePlan(
 		} else if nextVersionSet.DeploymentHealthy {
 			// Register the latest deployment as default version set if it is healthy
 			switch nextVersionSet.VersionSet.ReachabilityStatus {
-			case temporaliov1alpha1.ReachabilityStatusNew,
-				temporaliov1alpha1.ReachabilityStatusExisting,
+			case temporaliov1alpha1.ReachabilityStatusReachable,
+				temporaliov1alpha1.ReachabilityStatusClosedOnly,
 				temporaliov1alpha1.ReachabilityStatusUnreachable:
 				plan.PromoteExistingVersion = desiredBuildID
 			case temporaliov1alpha1.ReachabilityStatusNotRegistered:

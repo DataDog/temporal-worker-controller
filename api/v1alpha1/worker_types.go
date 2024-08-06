@@ -57,9 +57,20 @@ type TemporalWorkerSpec struct {
 type ReachabilityStatus string
 
 const (
-	ReachabilityStatusActive        ReachabilityStatus = "Active"
-	ReachabilityStatusQueryable     ReachabilityStatus = "Queryable"
-	ReachabilityStatusUnreachable   ReachabilityStatus = "Unreachable"
+	// ReachabilityStatusReachable indicates that the build ID may be used by
+	// new workflows or activities (base on versioning rules), or there MAY
+	// be open workflows or backlogged activities assigned to it.
+	ReachabilityStatusReachable ReachabilityStatus = "Reachable"
+	// ReachabilityStatusClosedOnly indicates that the build ID does not have
+	// open workflows and is not reachable by new workflows, but MAY have
+	// closed workflows within the namespace retention period.
+	ReachabilityStatusClosedOnly ReachabilityStatus = "ClosedWorkflows"
+	// ReachabilityStatusUnreachable indicates that the build ID is not used
+	// for new executions, nor it has been used by any existing execution
+	// within the retention period.
+	ReachabilityStatusUnreachable ReachabilityStatus = "Unreachable"
+	// ReachabilityStatusNotRegistered indicates that the build ID is not registered
+	// with Temporal for the given task queue.
 	ReachabilityStatusNotRegistered ReachabilityStatus = "NotRegistered"
 )
 
