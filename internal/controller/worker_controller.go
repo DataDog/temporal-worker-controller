@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"go.temporal.io/api/enums/v1"
+	"go.temporal.io/api/taskqueue/v1"
 	"go.temporal.io/api/workflowservice/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
@@ -150,6 +151,26 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 		rule.GetRule().GetTargetBuildId()
 		rule.GetRule().GetRamp()
 		rule.GetRule().GetPercentageRamp().GetRampPercentage()
+	}
+
+	tq, err := r.WorkflowServiceClient.DescribeTaskQueue(ctx, &workflowservice.DescribeTaskQueueRequest{
+		Namespace: workerDeploy.Spec.WorkerOptions.TemporalNamespace,
+		TaskQueue: &taskqueue.TaskQueue{
+			Name: workerDeploy.Spec.WorkerOptions.TaskQueue,
+			//Kind: 0, // defaults to "normal"
+		},
+	})
+	if err != nil {
+		return status, fmt.Errorf("unable to describe task queue: %w", err)
+	}
+
+	for buildID, info := range tq.GetVersionsInfo() {
+		fmt.Println(buildID)
+		info.GetTaskReachability()
+		for _, typeInfo := range info.GetTypesInfo() {
+			typeInfo.GetStats()
+			typeInfo.GetPollers()
+		}
 	}
 
 	setsResponse, err := r.WorkflowServiceClient.GetWorkerBuildIdCompatibility(ctx, &workflowservice.GetWorkerBuildIdCompatibilityRequest{
@@ -357,9 +378,9 @@ func getReachability(
 					case enums.TASK_REACHABILITY_NEW_WORKFLOWS,
 						enums.TASK_REACHABILITY_EXISTING_WORKFLOWS,
 						enums.TASK_REACHABILITY_OPEN_WORKFLOWS:
-						result[r.GetBuildId()] = temporaliov1alpha1.ReachabilityStatusActive
+						result[r.GetBuildId()] = temporaliov1alpha1.ReachabilityStatusNew
 					case enums.TASK_REACHABILITY_CLOSED_WORKFLOWS:
-						result[r.GetBuildId()] = temporaliov1alpha1.ReachabilityStatusQueryable
+						result[r.GetBuildId()] = temporaliov1alpha1.ReachabilityStatusExisting
 					default:
 						return nil, fmt.Errorf("unhandled build id reachability: %s", reachabilityType.String())
 					}
@@ -430,7 +451,7 @@ func (r *TemporalWorkerReconciler) generatePlan(
 			if d.Spec.Replicas != nil && *d.Spec.Replicas != 0 {
 				plan.ScaleDeployments[versionSet.Deployment] = 0
 			}
-		case temporaliov1alpha1.ReachabilityStatusQueryable:
+		case temporaliov1alpha1.ReachabilityStatusExisting:
 			// TODO(jlegrone): Compute scale based on load? Or percentage of replicas?
 			// Scale down queryable deployments
 			if d.Spec.Replicas != nil && *d.Spec.Replicas != 1 {
@@ -467,8 +488,8 @@ func (r *TemporalWorkerReconciler) generatePlan(
 		} else if nextVersionSet.DeploymentHealthy {
 			// Register the latest deployment as default version set if it is healthy
 			switch nextVersionSet.VersionSet.ReachabilityStatus {
-			case temporaliov1alpha1.ReachabilityStatusActive,
-				temporaliov1alpha1.ReachabilityStatusQueryable,
+			case temporaliov1alpha1.ReachabilityStatusNew,
+				temporaliov1alpha1.ReachabilityStatusExisting,
 				temporaliov1alpha1.ReachabilityStatusUnreachable:
 				plan.PromoteExistingVersion = desiredBuildID
 			case temporaliov1alpha1.ReachabilityStatusNotRegistered:

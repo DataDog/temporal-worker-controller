@@ -48,18 +48,18 @@ func TestFindHighestPriorityStatus(t *testing.T) {
 	for name, tc := range map[string]testCase{
 		"empty": {},
 		"single status": {
-			statuses: []temporaliov1alpha1.ReachabilityStatus{temporaliov1alpha1.ReachabilityStatusActive},
-			expected: temporaliov1alpha1.ReachabilityStatusActive,
+			statuses: []temporaliov1alpha1.ReachabilityStatus{temporaliov1alpha1.ReachabilityStatusNew},
+			expected: temporaliov1alpha1.ReachabilityStatusNew,
 		},
 		"multiple statuses": {
 			statuses: []temporaliov1alpha1.ReachabilityStatus{
 				temporaliov1alpha1.ReachabilityStatusNotRegistered,
-				temporaliov1alpha1.ReachabilityStatusQueryable,
-				temporaliov1alpha1.ReachabilityStatusActive,
+				temporaliov1alpha1.ReachabilityStatusExisting,
+				temporaliov1alpha1.ReachabilityStatusNew,
 				temporaliov1alpha1.ReachabilityStatusUnreachable,
-				temporaliov1alpha1.ReachabilityStatusQueryable,
+				temporaliov1alpha1.ReachabilityStatusExisting,
 			},
-			expected: temporaliov1alpha1.ReachabilityStatusActive,
+			expected: temporaliov1alpha1.ReachabilityStatusNew,
 		},
 	} {
 		t.Run(name, func(t *testing.T) {

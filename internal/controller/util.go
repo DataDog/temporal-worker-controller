@@ -35,9 +35,9 @@ func findHighestPriorityStatus(statuses []temporaliov1alpha1.ReachabilityStatus)
 
 func getStatusPriority(s temporaliov1alpha1.ReachabilityStatus) int {
 	switch s {
-	case temporaliov1alpha1.ReachabilityStatusActive:
+	case temporaliov1alpha1.ReachabilityStatusNew:
 		return 4
-	case temporaliov1alpha1.ReachabilityStatusQueryable:
+	case temporaliov1alpha1.ReachabilityStatusExisting:
 		return 3
 	case temporaliov1alpha1.ReachabilityStatusUnreachable:
 		return 2
