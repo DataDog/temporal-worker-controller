@@ -97,11 +97,11 @@ func (r *TemporalWorkerReconciler) generatePlan(
 			if err != nil {
 				return nil, err
 			}
-			existing, _ := r.getDeployment(ctx, *newObjectRef(*d))
+			existing, _ := r.getDeployment(ctx, *newObjectRef(d))
 			if existing == nil {
 				plan.CreateDeployment = d
 			} else {
-				plan.ScaleDeployments[newObjectRef(*existing)] = uint32(*desiredState.Spec.Replicas)
+				plan.ScaleDeployments[newObjectRef(existing)] = uint32(*desiredState.Spec.Replicas)
 			}
 		} else if nextVersionSet.BuildID != desiredBuildID {
 			// Delete the latest (unregistered) deployment if the desired build ID has changed
