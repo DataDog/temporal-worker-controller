@@ -38,11 +38,11 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 	})
 
 	// Gather build IDs for each managed deployment
-	buildIDsToDeployments := map[string]int{}
-	for i, childDeploy := range childDeploys.Items {
+	buildIDsToDeployments := map[string]*appsv1.Deployment{}
+	for _, childDeploy := range childDeploys.Items {
 		if buildID, ok := childDeploy.GetLabels()[buildIDLabel]; ok {
 			childDeploy.GetObjectMeta().GetCreationTimestamp()
-			buildIDsToDeployments[buildID] = i
+			buildIDsToDeployments[buildID] = &childDeploy
 		} else {
 			// TODO(jlegrone): implement some error handling (maybe a human deleted the label?)
 		}
@@ -69,7 +69,7 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 				//Healthy:      healthy,
 				BuildID:      rule.GetRule().GetTargetBuildId(),
 				Reachability: "", // This should be set later on
-				Deployment:   newObjectRef(d),
+				Deployment:   newObjectRef(buildIDsToDeployments[rule.GetRule().GetTargetBuildId()]),
 			}
 		}
 
@@ -110,7 +110,7 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 		// Otherwise, mark the build ID as unregistered
 		reachability[id] = temporaliov1alpha1.ReachabilityStatusNotRegistered
 
-		d := childDeploys.Items[buildIDsToDeployments[id]]
+		d := buildIDsToDeployments[id]
 
 		// If the deployment is the desired build ID, then it should be the next version set.
 		if id == desiredBuildID {

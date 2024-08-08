@@ -41,7 +41,10 @@ func computeBuildID(spec temporaliov1alpha1.TemporalWorkerSpec) string {
 	return utils.ComputeHash(&spec.Template, nil)
 }
 
-func newObjectRef(d appsv1.Deployment) *v1.ObjectReference {
+func newObjectRef(d *appsv1.Deployment) *v1.ObjectReference {
+	if d == nil {
+		return nil
+	}
 	return &v1.ObjectReference{
 		Kind:            d.Kind,
 		Namespace:       d.Namespace,
