@@ -7649,12 +7649,20 @@ spec:
           status:
             description: TemporalWorkerStatus defines the observed state of TemporalWorker
             properties:
-              defaultVersionSet:
-                description: DefaultVersionSet is the version set that is currently
-                  registered with Temporal as the default. Deployment must not be
-                  nil in this version set.
+              defaultVersion:
+                description: DefaultVersion is the deployment that is currently registered
+                  with Temporal as the default. This must never be nil.
                 properties:
-                  active:
+                  buildID:
+                    description: The build ID associated with the deployment.
+                    type: string
+                  compatibleBuildIDs:
+                    description: Other compatible build IDs that redirect to this
+                      deployment.
+                    items:
+                      type: string
+                    type: array
+                  deployment:
                     description: A pointer to the version set's managed deployment.
                     properties:
                       apiVersion:
@@ -7691,39 +7699,38 @@ spec:
                         type: string
                     type: object
                     x-kubernetes-map-type: atomic
-                  defaultBuildID:
-                    description: The default build ID currently registered with Temporal.
-                    type: string
-                  deployedBuildID:
-                    description: "The build ID associated with the version set's current
-                      deployment. \n This should usually align with the DefaultBuildID,
-                      but may be different in cases where the version set has been
-                      recently updated or frozen."
-                    type: string
-                  inactiveBuildIDs:
-                    description: Build IDs that were previously registered as the
-                      default.
-                    items:
-                      type: string
-                    type: array
-                  reachabilityStatus:
-                    description: 'ReachabilityStatus indicates whether workers in
-                      this version set may be eligible to receive tasks from the Temporal
-                      server. TODO(jlegrone): Make this an enum, and consider whether
-                      multiple values are needed.'
+                  healthy:
+                    description: Healthy indicates whether the deployment is healthy.
+                    type: boolean
+                  rampPercentage:
+                    description: Acceptable range is [0,100].
+                    type: integer
+                  reachability:
+                    description: Reachability indicates whether workers in this version
+                      set may be eligible to receive tasks from the Temporal server.
                     type: string
                 required:
-                - defaultBuildID
-                - deployedBuildID
-                - reachabilityStatus
+                - buildID
+                - deployment
+                - healthy
+                - reachability
                 type: object
-              deprecatedVersionSets:
-                description: DeprecatedVersionSets are version sets that are no longer
+              deprecatedVersions:
+                description: DeprecatedVersions are deployments that are no longer
                   the default. Any deployments that are unreachable should be deleted
                   by the controller.
                 items:
                   properties:
-                    active:
+                    buildID:
+                      description: The build ID associated with the deployment.
+                      type: string
+                    compatibleBuildIDs:
+                      description: Other compatible build IDs that redirect to this
+                        deployment.
+                      items:
+                        type: string
+                      type: array
+                    deployment:
                       description: A pointer to the version set's managed deployment.
                       properties:
                         apiVersion:
@@ -7761,114 +7768,94 @@ spec:
                           type: string
                       type: object
                       x-kubernetes-map-type: atomic
-                    defaultBuildID:
-                      description: The default build ID currently registered with
-                        Temporal.
-                      type: string
-                    deployedBuildID:
-                      description: "The build ID associated with the version set's
-                        current deployment. \n This should usually align with the
-                        DefaultBuildID, but may be different in cases where the version
-                        set has been recently updated or frozen."
-                      type: string
-                    inactiveBuildIDs:
-                      description: Build IDs that were previously registered as the
-                        default.
-                      items:
-                        type: string
-                      type: array
-                    reachabilityStatus:
-                      description: 'ReachabilityStatus indicates whether workers in
-                        this version set may be eligible to receive tasks from the
-                        Temporal server. TODO(jlegrone): Make this an enum, and consider
-                        whether multiple values are needed.'
+                    healthy:
+                      description: Healthy indicates whether the deployment is healthy.
+                      type: boolean
+                    rampPercentage:
+                      description: Acceptable range is [0,100].
+                      type: integer
+                    reachability:
+                      description: Reachability indicates whether workers in this
+                        version set may be eligible to receive tasks from the Temporal
+                        server.
                       type: string
                   required:
-                  - defaultBuildID
-                  - deployedBuildID
-                  - reachabilityStatus
+                  - buildID
+                  - deployment
+                  - healthy
+                  - reachability
                   type: object
                 type: array
-              nextVersionSet:
-                description: NextVersionSet is the desired next version. If the deployment
+              targetVersion:
+                description: TargetVersion is the desired next version. If the deployment
                   is nil, then the controller should create it. If not nil, the controller
                   should wait for it to become healthy and then move it to the DefaultVersionSet.
                 properties:
-                  deploymentHealthy:
-                    description: DeploymentHealthy indicates whether the deployment
-                      is healthy.
-                    type: boolean
-                  versionSet:
+                  buildID:
+                    description: The build ID associated with the deployment.
+                    type: string
+                  compatibleBuildIDs:
+                    description: Other compatible build IDs that redirect to this
+                      deployment.
+                    items:
+                      type: string
+                    type: array
+                  deployment:
+                    description: A pointer to the version set's managed deployment.
                     properties:
-                      active:
-                        description: A pointer to the version set's managed deployment.
-                        properties:
-                          apiVersion:
-                            description: API version of the referent.
-                            type: string
-                          fieldPath:
-                            description: 'If referring to a piece of an object instead
-                              of an entire object, this string should contain a valid
-                              JSON/Go field access statement, such as desiredState.manifest.containers[2].
-                              For example, if the object reference is to a container
-                              within a pod, this would take on a value like: "spec.containers{name}"
-                              (where "name" refers to the name of the container that
-                              triggered the event) or if no container name is specified
-                              "spec.containers[2]" (container with index 2 in this
-                              pod). This syntax is chosen only to have some well-defined
-                              way of referencing a part of an object. TODO: this design
-                              is not final and this field is subject to change in
-                              the future.'
-                            type: string
-                          kind:
-                            description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-                            type: string
-                          name:
-                            description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
-                            type: string
-                          namespace:
-                            description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/'
-                            type: string
-                          resourceVersion:
-                            description: 'Specific resourceVersion to which this reference
-                              is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
-                            type: string
-                          uid:
-                            description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
-                            type: string
-                        type: object
-                        x-kubernetes-map-type: atomic
-                      defaultBuildID:
-                        description: The default build ID currently registered with
-                          Temporal.
+                      apiVersion:
+                        description: API version of the referent.
                         type: string
-                      deployedBuildID:
-                        description: "The build ID associated with the version set's
-                          current deployment. \n This should usually align with the
-                          DefaultBuildID, but may be different in cases where the
-                          version set has been recently updated or frozen."
+                      fieldPath:
+                        description: 'If referring to a piece of an object instead
+                          of an entire object, this string should contain a valid
+                          JSON/Go field access statement, such as desiredState.manifest.containers[2].
+                          For example, if the object reference is to a container within
+                          a pod, this would take on a value like: "spec.containers{name}"
+                          (where "name" refers to the name of the container that triggered
+                          the event) or if no container name is specified "spec.containers[2]"
+                          (container with index 2 in this pod). This syntax is chosen
+                          only to have some well-defined way of referencing a part
+                          of an object. TODO: this design is not final and this field
+                          is subject to change in the future.'
                         type: string
-                      inactiveBuildIDs:
-                        description: Build IDs that were previously registered as
-                          the default.
-                        items:
-                          type: string
-                        type: array
-                      reachabilityStatus:
-                        description: 'ReachabilityStatus indicates whether workers
-                          in this version set may be eligible to receive tasks from
-                          the Temporal server. TODO(jlegrone): Make this an enum,
-                          and consider whether multiple values are needed.'
+                      kind:
+                        description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
                         type: string
-                    required:
-                    - defaultBuildID
-                    - deployedBuildID
-                    - reachabilityStatus
+                      name:
+                        description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                        type: string
+                      namespace:
+                        description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/'
+                        type: string
+                      resourceVersion:
+                        description: 'Specific resourceVersion to which this reference
+                          is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
+                        type: string
+                      uid:
+                        description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
+                        type: string
                     type: object
+                    x-kubernetes-map-type: atomic
+                  healthy:
+                    description: Healthy indicates whether the deployment is healthy.
+                    type: boolean
+                  rampPercentage:
+                    description: Acceptable range is [0,100].
+                    type: integer
+                  reachability:
+                    description: Reachability indicates whether workers in this version
+                      set may be eligible to receive tasks from the Temporal server.
+                    type: string
                 required:
-                - deploymentHealthy
-                - versionSet
+                - buildID
+                - deployment
+                - healthy
+                - reachability
                 type: object
+            required:
+            - defaultVersion
+            - targetVersion
             type: object
         type: object
     served: true

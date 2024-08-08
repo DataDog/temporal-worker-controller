@@ -102,7 +102,7 @@ type VersionedDeployment struct {
 	// be eligible to receive tasks from the Temporal server.
 	Reachability ReachabilityStatus `json:"reachability"`
 	// Acceptable range is [0,100].
-	RampPercentage *float32 `json:"rampPercentage,omitempty"`
+	RampPercentage *uint8 `json:"rampPercentage,omitempty"`
 	// A pointer to the version set's managed deployment.
 	Deployment *v1.ObjectReference `json:"deployment"`
 }
