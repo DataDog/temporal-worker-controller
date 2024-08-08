@@ -6,12 +6,10 @@ package controller
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"go.temporal.io/api/workflowservice/v1"
 	appsv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -20,7 +18,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	temporaliov1alpha1 "github.com/DataDog/temporal-worker-controller/api/v1alpha1"
-	"github.com/DataDog/temporal-worker-controller/internal/k8s.io/utils"
 )
 
 var (
@@ -127,88 +124,4 @@ func (r *TemporalWorkerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&temporaliov1alpha1.TemporalWorker{}).
 		Owns(&appsv1.Deployment{}).
 		Complete(r)
-}
-
-func computeBuildID(spec temporaliov1alpha1.TemporalWorkerSpec) string {
-	return utils.ComputeHash(&spec.Template, nil)
-}
-
-func (r *TemporalWorkerReconciler) newDeployment(wd temporaliov1alpha1.TemporalWorker, buildID string) (*appsv1.Deployment, error) {
-	d := newDeploymentWithoutOwnerRef(wd, buildID)
-	if err := ctrl.SetControllerReference(&wd, d, r.Scheme); err != nil {
-		return nil, err
-	}
-	return d, nil
-}
-
-func newDeploymentWithoutOwnerRef(deployment temporaliov1alpha1.TemporalWorker, buildID string) *appsv1.Deployment {
-	labels := map[string]string{}
-	// Merge labels from TemporalWorker with build ID
-	for k, v := range deployment.Spec.Selector.MatchLabels {
-		labels[k] = v
-	}
-	labels[buildIDLabel] = buildID
-	// Set pod labels
-	if deployment.Spec.Template.Labels == nil {
-		deployment.Spec.Template.Labels = labels
-	} else {
-		for k, v := range labels {
-			deployment.Spec.Template.Labels[k] = v
-		}
-	}
-
-	for i, container := range deployment.Spec.Template.Spec.Containers {
-		container.Env = append(container.Env, v1.EnvVar{
-			Name:  "TEMPORAL_NAMESPACE",
-			Value: deployment.Spec.WorkerOptions.TemporalNamespace,
-		}, v1.EnvVar{
-			Name:  "TEMPORAL_TASK_QUEUE",
-			Value: deployment.Spec.WorkerOptions.TaskQueue,
-		}, v1.EnvVar{
-			Name:  "TEMPORAL_BUILD_ID",
-			Value: buildID,
-		})
-		deployment.Spec.Template.Spec.Containers[i] = container
-	}
-
-	blockOwnerDeletion := true
-
-	return &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:                       fmt.Sprintf("%s-%s", deployment.ObjectMeta.Name, buildID),
-			Namespace:                  deployment.ObjectMeta.Namespace,
-			DeletionGracePeriodSeconds: nil,
-			Labels:                     labels,
-			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         deployment.TypeMeta.APIVersion,
-				Kind:               deployment.TypeMeta.Kind,
-				Name:               deployment.ObjectMeta.Name,
-				UID:                deployment.ObjectMeta.UID,
-				BlockOwnerDeletion: &blockOwnerDeletion,
-				Controller:         nil,
-			}},
-			// TODO(jlegrone): Add finalizer managed by the controller in order to prevent
-			//                 deleting deployments that are still reachable.
-			Finalizers: nil,
-		},
-		Spec: appsv1.DeploymentSpec{
-			Replicas: deployment.Spec.Replicas,
-			Selector: &metav1.LabelSelector{
-				MatchLabels: labels,
-			},
-			Template:        deployment.Spec.Template,
-			MinReadySeconds: deployment.Spec.MinReadySeconds,
-		},
-	}
-}
-
-func newObjectRef(d appsv1.Deployment) *v1.ObjectReference {
-	return &v1.ObjectReference{
-		Kind:            d.Kind,
-		Namespace:       d.Namespace,
-		Name:            d.Name,
-		UID:             d.UID,
-		APIVersion:      d.APIVersion,
-		ResourceVersion: d.ResourceVersion,
-	}
 }

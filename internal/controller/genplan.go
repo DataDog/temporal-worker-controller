@@ -6,6 +6,8 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	temporaliov1alpha1 "github.com/DataDog/temporal-worker-controller/api/v1alpha1"
@@ -131,4 +133,73 @@ func (r *TemporalWorkerReconciler) getDeployment(ctx context.Context, ref v1.Obj
 		return nil, err
 	}
 	return &d, nil
+}
+
+func (r *TemporalWorkerReconciler) newDeployment(wd temporaliov1alpha1.TemporalWorker, buildID string) (*appsv1.Deployment, error) {
+	d := newDeploymentWithoutOwnerRef(wd, buildID)
+	if err := ctrl.SetControllerReference(&wd, d, r.Scheme); err != nil {
+		return nil, err
+	}
+	return d, nil
+}
+
+func newDeploymentWithoutOwnerRef(deployment temporaliov1alpha1.TemporalWorker, buildID string) *appsv1.Deployment {
+	labels := map[string]string{}
+	// Merge labels from TemporalWorker with build ID
+	for k, v := range deployment.Spec.Selector.MatchLabels {
+		labels[k] = v
+	}
+	labels[buildIDLabel] = buildID
+	// Set pod labels
+	if deployment.Spec.Template.Labels == nil {
+		deployment.Spec.Template.Labels = labels
+	} else {
+		for k, v := range labels {
+			deployment.Spec.Template.Labels[k] = v
+		}
+	}
+
+	for i, container := range deployment.Spec.Template.Spec.Containers {
+		container.Env = append(container.Env, v1.EnvVar{
+			Name:  "TEMPORAL_NAMESPACE",
+			Value: deployment.Spec.WorkerOptions.TemporalNamespace,
+		}, v1.EnvVar{
+			Name:  "TEMPORAL_TASK_QUEUE",
+			Value: deployment.Spec.WorkerOptions.TaskQueue,
+		}, v1.EnvVar{
+			Name:  "TEMPORAL_BUILD_ID",
+			Value: buildID,
+		})
+		deployment.Spec.Template.Spec.Containers[i] = container
+	}
+
+	blockOwnerDeletion := true
+
+	return &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:                       fmt.Sprintf("%s-%s", deployment.ObjectMeta.Name, buildID),
+			Namespace:                  deployment.ObjectMeta.Namespace,
+			DeletionGracePeriodSeconds: nil,
+			Labels:                     labels,
+			OwnerReferences: []metav1.OwnerReference{{
+				APIVersion:         deployment.TypeMeta.APIVersion,
+				Kind:               deployment.TypeMeta.Kind,
+				Name:               deployment.ObjectMeta.Name,
+				UID:                deployment.ObjectMeta.UID,
+				BlockOwnerDeletion: &blockOwnerDeletion,
+				Controller:         nil,
+			}},
+			// TODO(jlegrone): Add finalizer managed by the controller in order to prevent
+			//                 deleting deployments that are still reachable.
+			Finalizers: nil,
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: deployment.Spec.Replicas,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: labels,
+			},
+			Template:        deployment.Spec.Template,
+			MinReadySeconds: deployment.Spec.MinReadySeconds,
+		},
+	}
 }
