@@ -60,7 +60,19 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 	if err != nil {
 		return status, fmt.Errorf("unable to get worker versioning rules: %w", err)
 	}
+	var defaultVersionFound bool
 	for _, rule := range rules.GetAssignmentRules() {
+		// Assign the default version if this is the first rule with no ramp value
+		if rule.GetRule().GetRamp() == nil && !defaultVersionFound {
+			defaultVersionFound = true
+			status.DefaultVersion = &temporaliov1alpha1.VersionedDeployment{
+				//Healthy:      healthy,
+				BuildID:      rule.GetRule().GetTargetBuildId(),
+				Reachability: "", // This should be set later on
+				Deployment:   newObjectRef(d),
+			}
+		}
+
 		rule.GetCreateTime()
 		rule.GetRule().GetTargetBuildId()
 		rule.GetRule().GetRamp()
