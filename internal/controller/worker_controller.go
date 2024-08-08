@@ -165,88 +165,14 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 	}
 
 	for buildID, info := range tq.GetVersionsInfo() {
+		registeredBuildIDs[buildID] = struct{}{}
+
 		fmt.Println(buildID)
 		info.GetTaskReachability()
 		for _, typeInfo := range info.GetTypesInfo() {
 			typeInfo.GetStats()
 			typeInfo.GetPollers()
 		}
-	}
-
-	setsResponse, err := r.WorkflowServiceClient.GetWorkerBuildIdCompatibility(ctx, &workflowservice.GetWorkerBuildIdCompatibilityRequest{
-		Namespace: workerDeploy.Spec.WorkerOptions.TemporalNamespace,
-		TaskQueue: workerDeploy.Spec.WorkerOptions.TaskQueue,
-		MaxSets:   0, // 0 returns all sets.
-	})
-	if err != nil {
-		return status, fmt.Errorf("unable to get worker version sets: %w", err)
-	}
-	for i, majorVersionSet := range setsResponse.GetMajorVersionSets() {
-		ids := majorVersionSet.GetBuildIds()
-		if len(ids) > 0 {
-			var (
-				d               *appsv1.Deployment
-				deployedBuildID string
-			)
-			for _, buildID := range ids {
-				if deploymentIndex, ok := buildIDsToDeployments[buildID]; ok {
-					d = &childDeploys.Items[deploymentIndex]
-					// TODO(jlegrone): Handle case where multiple deployments might exist for major version set, eg.
-					//                 due to an out of band major version set merge.
-					deployedBuildID = buildID
-				}
-			}
-
-			set := temporaliov1alpha1.CompatibleVersionSet{
-				ReachabilityStatus: "", // populated further down in the function
-				DeployedBuildID:    deployedBuildID,
-				DefaultBuildID:     ids[len(ids)-1],
-				InactiveBuildIDs:   ids[:len(ids)-1],
-			}
-			if d != nil {
-				set.Deployment = newObjectRef(*d)
-			}
-
-			// Note default major version set -- this is the last item in the list.
-			if i == len(setsResponse.GetMajorVersionSets())-1 {
-				status.DefaultVersionSet = &set
-			} else {
-				if set.DefaultBuildID == desiredBuildID {
-					// Handle rollback case
-					status.NextVersionSet = &temporaliov1alpha1.NextVersionSet{
-						VersionSet: &set,
-						// TODO(jlegrone): actually perform check
-						DeploymentHealthy: true,
-					}
-				} else {
-					status.DeprecatedVersionSets = append(status.DeprecatedVersionSets, &set)
-				}
-			}
-
-			for _, id := range ids {
-				registeredBuildIDs[id] = struct{}{}
-			}
-		}
-	}
-
-	if len(registeredBuildIDs) > 0 {
-		// Get build ID reachability via Temporal API
-		ids := make([]string, 0, len(registeredBuildIDs))
-		for id := range registeredBuildIDs {
-			ids = append(ids, id)
-		}
-
-		r, err := getReachability(
-			ctx,
-			r.WorkflowServiceClient,
-			ids,
-			workerDeploy.Spec.WorkerOptions.TemporalNamespace,
-			workerDeploy.Spec.WorkerOptions.TaskQueue,
-		)
-		if err != nil {
-			return temporaliov1alpha1.TemporalWorkerStatus{}, fmt.Errorf("unable to fetch worker task reachability: %w", err)
-		}
-		reachability = r
 	}
 
 	// Handle unregistered deployments
@@ -271,47 +197,42 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 				}
 			}
 
-			status.NextVersionSet = &temporaliov1alpha1.NextVersionSet{
-				VersionSet: &temporaliov1alpha1.CompatibleVersionSet{
-					Deployment:         newObjectRef(d),
-					ReachabilityStatus: "", // This should be set later on
-					DeployedBuildID:    desiredBuildID,
-				},
-				DeploymentHealthy: healthy,
+			status.TargetVersion = &temporaliov1alpha1.VersionedDeployment{
+				Healthy:      healthy,
+				BuildID:      desiredBuildID,
+				Reachability: "", // This should be set later on
+				Deployment:   newObjectRef(d),
 			}
 		} else {
 			// Otherwise it should be deprecated and marked for deletion.
-			status.DeprecatedVersionSets = append(status.DeprecatedVersionSets, &temporaliov1alpha1.CompatibleVersionSet{
-				ReachabilityStatus: "", // This should be set later on
-				Deployment:         newObjectRef(d),
-				DeployedBuildID:    id,
-				DefaultBuildID:     id,
+			status.DeprecatedVersions = append(status.DeprecatedVersions, &temporaliov1alpha1.VersionedDeployment{
+				Reachability: "", // This should be set later on
+				Deployment:   newObjectRef(d),
+				BuildID:      id,
 			})
 		}
 	}
 
 	// Set next version set's build ID if it doesn't exist yet.
 	// The deployment will be created by the next reconciliation loop.
-	if status.NextVersionSet == nil && (status.DefaultVersionSet == nil || status.DefaultVersionSet.DeployedBuildID != desiredBuildID) {
-		status.NextVersionSet = &temporaliov1alpha1.NextVersionSet{
-			VersionSet: &temporaliov1alpha1.CompatibleVersionSet{
-				Deployment:         nil,
-				DefaultBuildID:     desiredBuildID,
-				ReachabilityStatus: "", // This should be set later on
-			},
+	if status.TargetVersion == nil && (status.DefaultVersion == nil || status.DefaultVersion.BuildID != desiredBuildID) {
+		status.TargetVersion = &temporaliov1alpha1.VersionedDeployment{
+			Deployment:   nil,
+			BuildID:      desiredBuildID,
+			Reachability: "", // This should be set later on
 		}
 	}
 
-	allVersionSets := append([]*temporaliov1alpha1.CompatibleVersionSet{}, status.DeprecatedVersionSets...)
-	if status.DefaultVersionSet != nil {
-		allVersionSets = append(allVersionSets, status.DefaultVersionSet)
+	allVersionSets := append([]*temporaliov1alpha1.VersionedDeployment{}, status.DeprecatedVersions...)
+	if status.DefaultVersion != nil {
+		allVersionSets = append(allVersionSets, status.DefaultVersion)
 	}
-	if status.NextVersionSet != nil {
-		allVersionSets = append(allVersionSets, status.NextVersionSet.VersionSet)
+	if status.TargetVersion != nil {
+		allVersionSets = append(allVersionSets, status.TargetVersion)
 	}
 	for _, versionSet := range allVersionSets {
 		s := reachability.getStatus(versionSet)
-		versionSet.ReachabilityStatus = s
+		versionSet.Reachability = s
 	}
 
 	return status, nil
@@ -319,19 +240,19 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 
 type reachabilityInfo map[string]temporaliov1alpha1.ReachabilityStatus
 
-func (r reachabilityInfo) getStatus(versionSet *temporaliov1alpha1.CompatibleVersionSet) temporaliov1alpha1.ReachabilityStatus {
+func (r reachabilityInfo) getStatus(versionSet *temporaliov1alpha1.VersionedDeployment) temporaliov1alpha1.ReachabilityStatus {
 	if versionSet == nil {
 		return ""
 	}
 
 	var statuses []temporaliov1alpha1.ReachabilityStatus
-	if s, ok := r[versionSet.DefaultBuildID]; ok {
+	if s, ok := r[versionSet.BuildID]; ok {
 		statuses = append(statuses, s)
 	}
-	if s, ok := r[versionSet.DeployedBuildID]; ok {
-		statuses = append(statuses, s)
-	}
-	for _, buildID := range versionSet.InactiveBuildIDs {
+	//if s, ok := r[versionSet.DeployedBuildID]; ok {
+	//	statuses = append(statuses, s)
+	//}
+	for _, buildID := range versionSet.CompatibleBuildIDs {
 		if s, ok := r[buildID]; ok {
 			statuses = append(statuses, s)
 		}
@@ -406,8 +327,8 @@ func (r *TemporalWorkerReconciler) generatePlan(
 	}
 
 	// Scale the active deployment if it doesn't match desired replicas
-	if observedState.DefaultVersionSet != nil && observedState.DefaultVersionSet.Deployment != nil {
-		defaultDeployment := observedState.DefaultVersionSet.Deployment
+	if observedState.DefaultVersion != nil && observedState.DefaultVersion.Deployment != nil {
+		defaultDeployment := observedState.DefaultVersion.Deployment
 		d, err := r.getDeployment(ctx, *defaultDeployment)
 		if err != nil {
 			return nil, err
@@ -421,7 +342,7 @@ func (r *TemporalWorkerReconciler) generatePlan(
 	//                 corresponding Deployment.
 
 	// Scale or delete deployments based on reachability
-	for _, versionSet := range observedState.DeprecatedVersionSets {
+	for _, versionSet := range observedState.DeprecatedVersions {
 		if versionSet.Deployment == nil {
 			// There's nothing we can do if the deployment was already deleted out of band.
 			continue
@@ -432,7 +353,7 @@ func (r *TemporalWorkerReconciler) generatePlan(
 			return nil, err
 		}
 
-		switch versionSet.ReachabilityStatus {
+		switch versionSet.Reachability {
 		case temporaliov1alpha1.ReachabilityStatusUnreachable:
 			// Scale down unreachable deployments. We do this instead
 			// of deleting them so that they can be scaled back up if
@@ -455,8 +376,8 @@ func (r *TemporalWorkerReconciler) generatePlan(
 
 	desiredBuildID := computeBuildID(desiredState.Spec)
 
-	if nextVersionSet := observedState.NextVersionSet; nextVersionSet != nil {
-		if nextVersionSet.VersionSet.Deployment == nil {
+	if nextVersionSet := observedState.TargetVersion; nextVersionSet != nil {
+		if nextVersionSet.Deployment == nil {
 			// Create new deployment from current pod template when it doesn't exist
 			d, err := r.newDeployment(desiredState, desiredBuildID)
 			if err != nil {
@@ -468,16 +389,16 @@ func (r *TemporalWorkerReconciler) generatePlan(
 			} else {
 				plan.ScaleDeployments[newObjectRef(*existing)] = uint32(*desiredState.Spec.Replicas)
 			}
-		} else if nextVersionSet.VersionSet.DeployedBuildID != desiredBuildID {
+		} else if nextVersionSet.BuildID != desiredBuildID {
 			// Delete the latest (unregistered) deployment if the desired build ID has changed
-			d, err := r.getDeployment(ctx, *nextVersionSet.VersionSet.Deployment)
+			d, err := r.getDeployment(ctx, *nextVersionSet.Deployment)
 			if err != nil {
 				return nil, err
 			}
 			plan.DeleteDeployments = append(plan.DeleteDeployments, d)
-		} else if nextVersionSet.DeploymentHealthy {
+		} else if nextVersionSet.Healthy {
 			// Register the latest deployment as default version set if it is healthy
-			switch nextVersionSet.VersionSet.ReachabilityStatus {
+			switch nextVersionSet.Reachability {
 			case temporaliov1alpha1.ReachabilityStatusReachable,
 				temporaliov1alpha1.ReachabilityStatusClosedOnly,
 				temporaliov1alpha1.ReachabilityStatusUnreachable:
@@ -485,7 +406,7 @@ func (r *TemporalWorkerReconciler) generatePlan(
 			case temporaliov1alpha1.ReachabilityStatusNotRegistered:
 				plan.RegisterDefaultVersion = desiredBuildID
 			default:
-				return nil, fmt.Errorf("unhandled reachability status: %s", nextVersionSet.VersionSet.ReachabilityStatus)
+				return nil, fmt.Errorf("unhandled reachability status: %s", nextVersionSet.Reachability)
 			}
 		}
 	}

@@ -74,45 +74,37 @@ const (
 	ReachabilityStatusNotRegistered ReachabilityStatus = "NotRegistered"
 )
 
-type CompatibleVersionSet struct {
-	// ReachabilityStatus indicates whether workers in this version set may
-	// be eligible to receive tasks from the Temporal server.
-	// TODO(jlegrone): Make this an enum, and consider whether multiple values are needed.
-	ReachabilityStatus ReachabilityStatus `json:"reachabilityStatus"`
-	// Build IDs that were previously registered as the default.
-	InactiveBuildIDs []string `json:"inactiveBuildIDs,omitempty"`
-	// The default build ID currently registered with Temporal.
-	DefaultBuildID string `json:"defaultBuildID"`
-	// The build ID associated with the version set's current deployment.
-	//
-	// This should usually align with the DefaultBuildID, but may be different
-	// in cases where the version set has been recently updated or frozen.
-	DeployedBuildID string `json:"deployedBuildID"`
-	// A pointer to the version set's managed deployment.
-	Deployment *v1.ObjectReference `json:"active,omitempty"`
-}
-
 // TemporalWorkerStatus defines the observed state of TemporalWorker
 type TemporalWorkerStatus struct {
 	// 	Remember, status should be able to be reconstituted from the state of the world, so it’s generally not a good
 	//	idea to read from the status of the root object. Instead, you should reconstruct it every run.
 
-	// NextVersionSet is the desired next version. If the deployment is nil,
+	// TargetVersion is the desired next version. If the deployment is nil,
 	// then the controller should create it. If not nil, the controller should
 	// wait for it to become healthy and then move it to the DefaultVersionSet.
-	NextVersionSet *NextVersionSet `json:"nextVersionSet,omitempty"`
-	// DefaultVersionSet is the version set that is currently registered with
-	// Temporal as the default. Deployment must not be nil in this version set.
-	DefaultVersionSet *CompatibleVersionSet `json:"defaultVersionSet,omitempty"`
-	// DeprecatedVersionSets are version sets that are no longer the default. Any
+	TargetVersion *VersionedDeployment `json:"targetVersion"`
+	// DefaultVersion is the deployment that is currently registered with
+	// Temporal as the default. This must never be nil.
+	DefaultVersion *VersionedDeployment `json:"defaultVersion"`
+	// DeprecatedVersions are deployments that are no longer the default. Any
 	// deployments that are unreachable should be deleted by the controller.
-	DeprecatedVersionSets []*CompatibleVersionSet `json:"deprecatedVersionSets,omitempty"`
+	DeprecatedVersions []*VersionedDeployment `json:"deprecatedVersions,omitempty"`
 }
 
-type NextVersionSet struct {
-	VersionSet *CompatibleVersionSet `json:"versionSet"`
-	// DeploymentHealthy indicates whether the deployment is healthy.
-	DeploymentHealthy bool `json:"deploymentHealthy"`
+type VersionedDeployment struct {
+	// Healthy indicates whether the deployment is healthy.
+	Healthy bool `json:"healthy"`
+	// The build ID associated with the deployment.
+	BuildID string `json:"buildID"`
+	// Other compatible build IDs that redirect to this deployment.
+	CompatibleBuildIDs []string `json:"compatibleBuildIDs,omitempty"`
+	// Reachability indicates whether workers in this version set may
+	// be eligible to receive tasks from the Temporal server.
+	Reachability ReachabilityStatus `json:"reachability"`
+	// Acceptable range is [0,100].
+	RampPercentage *float32 `json:"rampPercentage,omitempty"`
+	// A pointer to the version set's managed deployment.
+	Deployment *v1.ObjectReference `json:"deployment"`
 }
 
 //+kubebuilder:object:root=true
