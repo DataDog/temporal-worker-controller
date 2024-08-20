@@ -20,11 +20,41 @@ import (
 	temporaliov1alpha1 "github.com/DataDog/temporal-worker-controller/api/v1alpha1"
 )
 
+type versionedDeploymentCollection struct {
+	buildIDsToDeployments map[string]*appsv1.Deployment
+	// map of build IDs to redirect (keys) to other build IDs (values)
+	redirectBuildIDFromTo map[string]string
+}
+
+func (c *versionedDeploymentCollection) GetDeployment(buildID string) (*appsv1.Deployment, bool) {
+	if redirectedBuildID, ok := c.redirectBuildIDFromTo[buildID]; ok {
+		return c.GetDeployment(redirectedBuildID)
+	}
+	d, ok := c.buildIDsToDeployments[buildID]
+	return d, ok
+}
+
+func (c *versionedDeploymentCollection) AddRedirect(from, to string) {
+	c.redirectBuildIDFromTo[from] = to
+}
+
+func (c *versionedDeploymentCollection) AddDeployment(buildID string, d *appsv1.Deployment) {
+	c.buildIDsToDeployments[buildID] = d
+}
+
+func newVersionedDeploymentCollection() versionedDeploymentCollection {
+	return versionedDeploymentCollection{
+		buildIDsToDeployments: make(map[string]*appsv1.Deployment),
+		redirectBuildIDFromTo: make(map[string]string),
+	}
+}
+
 func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.Request, workerDeploy temporaliov1alpha1.TemporalWorker) (temporaliov1alpha1.TemporalWorkerStatus, error) {
 	var (
-		status         temporaliov1alpha1.TemporalWorkerStatus
-		desiredBuildID = computeBuildID(workerDeploy.Spec)
-		reachability   = make(reachabilityInfo)
+		status               temporaliov1alpha1.TemporalWorkerStatus
+		desiredBuildID       = computeBuildID(workerDeploy.Spec)
+		reachability         = make(reachabilityInfo)
+		versionedDeployments = newVersionedDeploymentCollection()
 	)
 
 	// Get managed worker deployments
@@ -38,11 +68,10 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 	})
 
 	// Gather build IDs for each managed deployment
-	buildIDsToDeployments := map[string]*appsv1.Deployment{}
 	for _, childDeploy := range childDeploys.Items {
 		if buildID, ok := childDeploy.GetLabels()[buildIDLabel]; ok {
 			childDeploy.GetObjectMeta().GetCreationTimestamp()
-			buildIDsToDeployments[buildID] = &childDeploy
+			versionedDeployments.AddDeployment(buildID, &childDeploy)
 		} else {
 			// TODO(jlegrone): implement some error handling (maybe a human deleted the label?)
 		}
@@ -60,18 +89,35 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 	if err != nil {
 		return status, fmt.Errorf("unable to get worker versioning rules: %w", err)
 	}
+	// Register redirect rules
+	for _, rule := range rules.GetCompatibleRedirectRules() {
+		versionedDeployments.AddRedirect(rule.GetRule().GetSourceBuildId(), rule.GetRule().GetTargetBuildId())
+	}
+
 	var defaultVersionFound bool
 	for _, rule := range rules.GetAssignmentRules() {
-		// Assign the default version if this is the first rule with no ramp value
-		if rule.GetRule().GetRamp() == nil && !defaultVersionFound {
+		// Exit the loop early if we've already found the default version; any assignment rules
+		// after this point are not applicable.
+		// TODO(jlegrone): Double check that this is correct. We also might need to delete unused
+		//                 assignment rules during the plan phase.
+		if defaultVersionFound {
+			break
+		}
+
+		// Assign the default version if this is the first with no ramp value
+		if rule.GetRule().GetRamp() == nil {
 			defaultVersionFound = true
-			status.DefaultVersion = &temporaliov1alpha1.VersionedDeployment{
-				//Healthy:      healthy,
-				BuildID:      rule.GetRule().GetTargetBuildId(),
-				Reachability: "", // This should be set later on
-				Deployment:   newObjectRef(buildIDsToDeployments[rule.GetRule().GetTargetBuildId()]),
+			if d, ok := versionedDeployments.GetDeployment(rule.GetRule().GetTargetBuildId()); ok {
+				status.DefaultVersion = &temporaliov1alpha1.VersionedDeployment{
+					Healthy:      false,
+					BuildID:      rule.GetRule().GetTargetBuildId(),
+					Reachability: "", // This should be set later on
+					Deployment:   newObjectRef(d),
+				}
 			}
 		}
+
+		// Add
 
 		rule.GetCreateTime()
 		rule.GetRule().GetTargetBuildId()
