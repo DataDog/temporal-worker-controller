@@ -100,29 +100,49 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 		// after this point are not applicable.
 		// TODO(jlegrone): Double check that this is correct. We also might need to delete unused
 		//                 assignment rules during the plan phase.
+		// TODO(jlegrone): Do rules need to be sorted by create time?
 		if defaultVersionFound {
 			break
 		}
 
-		// Assign the default version if this is the first with no ramp value
-		if rule.GetRule().GetRamp() == nil {
-			defaultVersionFound = true
+		// TODO(jlegrone): Do we need to garbage collect assignment rules for versions that have no deployment?
+		if rule.GetRule().GetTargetBuildId() == desiredBuildID {
+			// Set the target version
 			if d, ok := versionedDeployments.GetDeployment(rule.GetRule().GetTargetBuildId()); ok {
-				status.DefaultVersion = &temporaliov1alpha1.VersionedDeployment{
-					Healthy:      false,
+				status.TargetVersion = &temporaliov1alpha1.VersionedDeployment{
+					Healthy:      false, // todo
 					BuildID:      rule.GetRule().GetTargetBuildId(),
 					Reachability: "", // This should be set later on
 					Deployment:   newObjectRef(d),
 				}
 			}
+		} else {
+			ramp := rule.GetRule().GetRamp()
+			// Assign the default version if this is the first with no ramp value
+			if ramp == nil {
+				defaultVersionFound = true
+				if d, ok := versionedDeployments.GetDeployment(rule.GetRule().GetTargetBuildId()); ok {
+					status.DeprecatedVersions = append(status.DeprecatedVersions, &temporaliov1alpha1.VersionedDeployment{
+						// Some way of indicating this is the default?
+						Healthy:      false, // todo
+						BuildID:      rule.GetRule().GetTargetBuildId(),
+						Reachability: temporaliov1alpha1.ReachabilityStatusReachable, // Should this be updated later on?
+						Deployment:   newObjectRef(d),
+					})
+				}
+			} else {
+				// Add to deprecated versions
+				if d, ok := versionedDeployments.GetDeployment(rule.GetRule().GetTargetBuildId()); ok {
+					status.DeprecatedVersions = append(status.DeprecatedVersions, &temporaliov1alpha1.VersionedDeployment{
+						// Some way of indicating this is the default?
+						Healthy:      false, // todo
+						BuildID:      rule.GetRule().GetTargetBuildId(),
+						Reachability: temporaliov1alpha1.ReachabilityStatusReachable, // Should this be updated later on?
+						Deployment:   newObjectRef(d),
+					})
+				}
+			}
 		}
-
-		// Add
-
-		rule.GetCreateTime()
-		rule.GetRule().GetTargetBuildId()
-		rule.GetRule().GetRamp()
-		rule.GetRule().GetPercentageRamp().GetRampPercentage()
 	}
 
 	tq, err := r.WorkflowServiceClient.DescribeTaskQueue(ctx, &workflowservice.DescribeTaskQueueRequest{

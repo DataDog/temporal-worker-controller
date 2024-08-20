@@ -82,9 +82,9 @@ type TemporalWorkerStatus struct {
 	// then the controller should create it. If not nil, the controller should
 	// wait for it to become healthy and then move it to the DefaultVersionSet.
 	TargetVersion *VersionedDeployment `json:"targetVersion"`
-	// DefaultVersion is the deployment that is currently registered with
-	// Temporal as the default. This must never be nil.
-	DefaultVersion *VersionedDeployment `json:"defaultVersion"`
+	//// DefaultVersion is the deployment that is currently registered with
+	//// Temporal as the default. This must never be nil.
+	//DefaultVersion *VersionedDeployment `json:"defaultVersion"`
 	// DeprecatedVersions are deployments that are no longer the default. Any
 	// deployments that are unreachable should be deleted by the controller.
 	DeprecatedVersions []*VersionedDeployment `json:"deprecatedVersions,omitempty"`
