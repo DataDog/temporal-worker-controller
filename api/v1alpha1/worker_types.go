@@ -22,6 +22,7 @@ type TemporalWorkerSpec struct {
 
 	// Number of desired pods. This is a pointer to distinguish between explicit
 	// zero and not specified. Defaults to 1.
+	// TODO(jlegrone): Configure min replicas per thousand workflow/activity tasks?
 	// +optional
 	Replicas *int32 `json:"replicas,omitempty" protobuf:"varint,1,opt,name=replicas"`
 
