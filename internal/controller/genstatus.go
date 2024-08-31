@@ -49,18 +49,19 @@ func newVersionedDeploymentCollection() versionedDeploymentCollection {
 	}
 }
 
-func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.Request, workerDeploy temporaliov1alpha1.TemporalWorker) (temporaliov1alpha1.TemporalWorkerStatus, error) {
+func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.Request, workerDeploy temporaliov1alpha1.TemporalWorker) (*temporaliov1alpha1.TemporalWorkerStatus, error) {
 	var (
-		status               temporaliov1alpha1.TemporalWorkerStatus
-		desiredBuildID       = computeBuildID(workerDeploy.Spec)
-		reachability         = make(reachabilityInfo)
-		versionedDeployments = newVersionedDeploymentCollection()
+		targetVersion, defaultVersion *temporaliov1alpha1.VersionedDeployment
+		deprecatedVersions            []*temporaliov1alpha1.VersionedDeployment
+		desiredBuildID                = computeBuildID(workerDeploy.Spec)
+		reachability                  = make(reachabilityInfo)
+		versionedDeployments          = newVersionedDeploymentCollection()
 	)
 
 	// Get managed worker deployments
 	var childDeploys appsv1.DeploymentList
 	if err := r.List(ctx, &childDeploys, client.InNamespace(req.Namespace), client.MatchingFields{deployOwnerKey: req.Name}); err != nil {
-		return status, fmt.Errorf("unable to list child deployments: %w", err)
+		return nil, fmt.Errorf("unable to list child deployments: %w", err)
 	}
 	// Sort deployments by creation timestamp
 	sort.SliceStable(childDeploys.Items, func(i, j int) bool {
@@ -87,7 +88,7 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 		TaskQueue: workerDeploy.Spec.WorkerOptions.TaskQueue,
 	})
 	if err != nil {
-		return status, fmt.Errorf("unable to get worker versioning rules: %w", err)
+		return nil, fmt.Errorf("unable to get worker versioning rules: %w", err)
 	}
 	// Register redirect rules
 	for _, rule := range rules.GetCompatibleRedirectRules() {
@@ -109,7 +110,7 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 		if rule.GetRule().GetTargetBuildId() == desiredBuildID {
 			// Set the target version
 			if d, ok := versionedDeployments.GetDeployment(rule.GetRule().GetTargetBuildId()); ok {
-				status.TargetVersion = &temporaliov1alpha1.VersionedDeployment{
+				targetVersion = &temporaliov1alpha1.VersionedDeployment{
 					Healthy:      false, // todo
 					BuildID:      rule.GetRule().GetTargetBuildId(),
 					Reachability: "", // This should be set later on
@@ -122,7 +123,7 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 			if ramp == nil {
 				defaultVersionFound = true
 				if d, ok := versionedDeployments.GetDeployment(rule.GetRule().GetTargetBuildId()); ok {
-					status.DeprecatedVersions = append(status.DeprecatedVersions, &temporaliov1alpha1.VersionedDeployment{
+					deprecatedVersions = append(deprecatedVersions, &temporaliov1alpha1.VersionedDeployment{
 						// Some way of indicating this is the default?
 						Healthy:      false, // todo
 						BuildID:      rule.GetRule().GetTargetBuildId(),
@@ -133,7 +134,7 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 			} else {
 				// Add to deprecated versions
 				if d, ok := versionedDeployments.GetDeployment(rule.GetRule().GetTargetBuildId()); ok {
-					status.DeprecatedVersions = append(status.DeprecatedVersions, &temporaliov1alpha1.VersionedDeployment{
+					deprecatedVersions = append(deprecatedVersions, &temporaliov1alpha1.VersionedDeployment{
 						// Some way of indicating this is the default?
 						Healthy:      false, // todo
 						BuildID:      rule.GetRule().GetTargetBuildId(),
@@ -153,7 +154,7 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 		},
 	})
 	if err != nil {
-		return status, fmt.Errorf("unable to describe task queue: %w", err)
+		return nil, fmt.Errorf("unable to describe task queue: %w", err)
 	}
 
 	for buildID, info := range tq.GetVersionsInfo() {
@@ -189,7 +190,7 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 				}
 			}
 
-			status.TargetVersion = &temporaliov1alpha1.VersionedDeployment{
+			targetVersion = &temporaliov1alpha1.VersionedDeployment{
 				Healthy:      healthy,
 				BuildID:      desiredBuildID,
 				Reachability: "", // This should be set later on
@@ -197,7 +198,7 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 			}
 		} else {
 			// Otherwise it should be deprecated and marked for deletion.
-			status.DeprecatedVersions = append(status.DeprecatedVersions, &temporaliov1alpha1.VersionedDeployment{
+			deprecatedVersions = append(deprecatedVersions, &temporaliov1alpha1.VersionedDeployment{
 				Reachability: "", // This should be set later on
 				Deployment:   newObjectRef(d),
 				BuildID:      id,
@@ -207,27 +208,31 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 
 	// Set next version set's build ID if it doesn't exist yet.
 	// The deployment will be created by the next reconciliation loop.
-	if status.TargetVersion == nil && (status.DefaultVersion == nil || status.DefaultVersion.BuildID != desiredBuildID) {
-		status.TargetVersion = &temporaliov1alpha1.VersionedDeployment{
+	if targetVersion == nil && (defaultVersion == nil || defaultVersion.BuildID != desiredBuildID) {
+		targetVersion = &temporaliov1alpha1.VersionedDeployment{
 			Deployment:   nil,
 			BuildID:      desiredBuildID,
 			Reachability: "", // This should be set later on
 		}
 	}
 
-	allVersionSets := append([]*temporaliov1alpha1.VersionedDeployment{}, status.DeprecatedVersions...)
-	if status.DefaultVersion != nil {
-		allVersionSets = append(allVersionSets, status.DefaultVersion)
+	allVersionSets := append([]*temporaliov1alpha1.VersionedDeployment{}, deprecatedVersions...)
+	if defaultVersion != nil {
+		allVersionSets = append(allVersionSets, defaultVersion)
 	}
-	if status.TargetVersion != nil {
-		allVersionSets = append(allVersionSets, status.TargetVersion)
+	if targetVersion != nil {
+		allVersionSets = append(allVersionSets, targetVersion)
 	}
 	for _, versionSet := range allVersionSets {
 		s := reachability.getStatus(versionSet)
 		versionSet.Reachability = s
 	}
 
-	return status, nil
+	return &temporaliov1alpha1.TemporalWorkerStatus{
+		TargetVersion:      targetVersion,
+		DefaultVersion:     defaultVersion,
+		DeprecatedVersions: deprecatedVersions,
+	}, nil
 }
 
 func getReachability(
