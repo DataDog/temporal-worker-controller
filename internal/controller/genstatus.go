@@ -43,13 +43,30 @@ func (c *versionedDeploymentCollection) GetVersionedDeployment(buildID string) *
 		Healthy:            false,
 		BuildID:            buildID,
 		CompatibleBuildIDs: nil,
-		Reachability:       "",
+		Reachability:       c.reachabilityInfo[buildID],
 		RampPercentage:     nil,
 		Deployment:         nil,
 	}
+
+	// Set deployment ref and health status
 	if d, ok := c.GetDeployment(buildID); ok {
+		// Check if deployment condition is "available"
+		var healthy bool
+		// TODO(jlegrone): do we need to sort conditions by timestamp?
+		for _, c := range d.Status.Conditions {
+			if c.Type == appsv1.DeploymentAvailable && c.Status == v1.ConditionTrue {
+				healthy = true
+			}
+		}
+		result.Healthy = healthy
 		result.Deployment = newObjectRef(d)
 	}
+
+	// Set ramp percentage
+	if ramp, ok := c.rampPercentages[buildID]; ok {
+		result.RampPercentage = &ramp
+	}
+
 	return &result
 }
 
