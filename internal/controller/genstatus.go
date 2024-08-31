@@ -27,7 +27,7 @@ type versionedDeploymentCollection struct {
 	// map of build IDs to ramp percentages [0,100]
 	rampPercentages map[string]uint8
 	// map of build IDs to task queue stats
-	stats map[string]*taskqueue.TaskQueueStats
+	stats map[string]temporaliov1alpha1.QueueStatistics
 	// map of build IDs to reachability
 	reachabilityStatus map[string]temporaliov1alpha1.ReachabilityStatus
 }
@@ -97,8 +97,23 @@ func (c *versionedDeploymentCollection) AddReachability(buildID string, info *ta
 		c.reachabilityStatus[buildID] = temporaliov1alpha1.ReachabilityStatusClosedOnly
 	case enums.BUILD_ID_TASK_REACHABILITY_UNREACHABLE:
 		c.reachabilityStatus[buildID] = temporaliov1alpha1.ReachabilityStatusUnreachable
+	default:
+		return fmt.Errorf("unhandled build id reachability: %s", info.GetTaskReachability().String())
 	}
-	return fmt.Errorf("unhandled build id reachability: %s", info.GetTaskReachability().String())
+
+	// Compute total stats
+	var totalStats temporaliov1alpha1.QueueStatistics
+	for _, stat := range info.GetTypesInfo() {
+		if backlogAge := stat.GetStats().GetApproximateBacklogAge(); backlogAge.AsDuration() > totalStats.ApproximateBacklogAge.AsDuration() {
+			totalStats.ApproximateBacklogAge = backlogAge
+		}
+		totalStats.ApproximateBacklogCount += stat.GetStats().GetApproximateBacklogCount()
+		totalStats.TasksAddRate += stat.GetStats().GetTasksAddRate()
+		totalStats.TasksDispatchRate += stat.GetStats().GetTasksDispatchRate()
+	}
+	c.stats[buildID] = totalStats
+
+	return nil
 }
 
 func newVersionedDeploymentCollection() versionedDeploymentCollection {

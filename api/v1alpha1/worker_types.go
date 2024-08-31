@@ -5,6 +5,7 @@
 package v1alpha1
 
 import (
+	"google.golang.org/protobuf/types/known/durationpb"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -122,8 +123,26 @@ type VersionedDeployment struct {
 	// Acceptable range is [0,100].
 	RampPercentage *uint8 `json:"rampPercentage,omitempty"`
 
+	// Statistics tracks information reported by the Temporal service about
+	// tasks being dispatched to this worker version.
+	Statistics *QueueStatistics `json:"statistics,omitempty"`
+
 	// A pointer to the version set's managed deployment.
 	Deployment *v1.ObjectReference `json:"deployment"`
+}
+
+type QueueStatistics struct {
+	// The approximate number of tasks backlogged in this task queue. May count expired tasks but eventually converges
+	// to the right value.
+	ApproximateBacklogCount int64 `json:"approximateBacklogCount,omitempty"`
+	// Approximate age of the oldest task in the backlog based on the creation timestamp of the task at the head of the queue.
+	ApproximateBacklogAge *durationpb.Duration `json:"approximateBacklogAge,omitempty"`
+	// Approximate tasks per second added to the task queue based on activity within a fixed window. This includes both backlogged and
+	// sync-matched tasks.
+	TasksAddRate float32 `json:"tasksAddRate,omitempty"`
+	// Approximate tasks per second dispatched to workers based on activity within a fixed window. This includes both backlogged and
+	// sync-matched tasks.
+	TasksDispatchRate float32 `json:"tasksDispatchRate,omitempty"`
 }
 
 //+kubebuilder:object:root=true
