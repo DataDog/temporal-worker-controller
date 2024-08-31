@@ -24,6 +24,10 @@ type versionedDeploymentCollection struct {
 	buildIDsToDeployments map[string]*appsv1.Deployment
 	// map of build IDs to redirect (keys) to other build IDs (values)
 	redirectBuildIDFromTo map[string]string
+	// map of build IDs to ramp percentages [0,100]
+	rampPercentages map[string]uint8
+	// map of build IDs to reachability status
+	reachabilityInfo map[string]temporaliov1alpha1.ReachabilityStatus
 }
 
 func (c *versionedDeploymentCollection) GetDeployment(buildID string) (*appsv1.Deployment, bool) {
@@ -34,12 +38,31 @@ func (c *versionedDeploymentCollection) GetDeployment(buildID string) (*appsv1.D
 	return d, ok
 }
 
-func (c *versionedDeploymentCollection) AddRedirect(from, to string) {
+func (c *versionedDeploymentCollection) GetVersionedDeployment(buildID string) *temporaliov1alpha1.VersionedDeployment {
+	result := temporaliov1alpha1.VersionedDeployment{
+		Healthy:            false,
+		BuildID:            buildID,
+		CompatibleBuildIDs: nil,
+		Reachability:       "",
+		RampPercentage:     nil,
+		Deployment:         nil,
+	}
+	if d, ok := c.GetDeployment(buildID); ok {
+		result.Deployment = newObjectRef(d)
+	}
+	return &result
+}
+
+func (c *versionedDeploymentCollection) AddBuildIDRedirect(from, to string) {
 	c.redirectBuildIDFromTo[from] = to
 }
 
 func (c *versionedDeploymentCollection) AddDeployment(buildID string, d *appsv1.Deployment) {
 	c.buildIDsToDeployments[buildID] = d
+}
+
+func (c *versionedDeploymentCollection) AddAssignmentRule(rule *taskqueue.BuildIdAssignmentRule) {
+	rule.GetPercentageRamp().GetRampPercentage()
 }
 
 func newVersionedDeploymentCollection() versionedDeploymentCollection {
@@ -73,9 +96,9 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 		if buildID, ok := childDeploy.GetLabels()[buildIDLabel]; ok {
 			childDeploy.GetObjectMeta().GetCreationTimestamp()
 			versionedDeployments.AddDeployment(buildID, &childDeploy)
-		} else {
-			// TODO(jlegrone): implement some error handling (maybe a human deleted the label?)
+			continue
 		}
+		// TODO(jlegrone): implement some error handling (maybe a human deleted the label?)
 	}
 
 	// Get all task queue version sets via Temporal API
@@ -92,7 +115,7 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 	}
 	// Register redirect rules
 	for _, rule := range rules.GetCompatibleRedirectRules() {
-		versionedDeployments.AddRedirect(rule.GetRule().GetSourceBuildId(), rule.GetRule().GetTargetBuildId())
+		versionedDeployments.AddBuildIDRedirect(rule.GetRule().GetSourceBuildId(), rule.GetRule().GetTargetBuildId())
 	}
 
 	var defaultVersionFound bool
