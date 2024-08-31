@@ -225,26 +225,3 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 		DeprecatedVersions: deprecatedVersions,
 	}, nil
 }
-
-type reachabilityInfo map[string]temporaliov1alpha1.ReachabilityStatus
-
-func (r reachabilityInfo) getStatus(versionSet *temporaliov1alpha1.VersionedDeployment) temporaliov1alpha1.ReachabilityStatus {
-	if versionSet == nil {
-		return ""
-	}
-
-	var statuses []temporaliov1alpha1.ReachabilityStatus
-	if s, ok := r[versionSet.BuildID]; ok {
-		statuses = append(statuses, s)
-	}
-	//if s, ok := r[versionSet.DeployedBuildID]; ok {
-	//	statuses = append(statuses, s)
-	//}
-	for _, buildID := range versionSet.CompatibleBuildIDs {
-		if s, ok := r[buildID]; ok {
-			statuses = append(statuses, s)
-		}
-	}
-
-	return findHighestPriorityStatus(statuses)
-}
