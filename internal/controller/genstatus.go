@@ -32,15 +32,15 @@ type versionedDeploymentCollection struct {
 	reachabilityStatus map[string]temporaliov1alpha1.ReachabilityStatus
 }
 
-func (c *versionedDeploymentCollection) GetDeployment(buildID string) (*appsv1.Deployment, bool) {
+func (c *versionedDeploymentCollection) getDeployment(buildID string) (*appsv1.Deployment, bool) {
 	if redirectedBuildID, ok := c.redirectBuildIDFromTo[buildID]; ok {
-		return c.GetDeployment(redirectedBuildID)
+		return c.getDeployment(redirectedBuildID)
 	}
 	d, ok := c.buildIDsToDeployments[buildID]
 	return d, ok
 }
 
-func (c *versionedDeploymentCollection) GetVersionedDeployment(buildID string) *temporaliov1alpha1.VersionedDeployment {
+func (c *versionedDeploymentCollection) getVersionedDeployment(buildID string) *temporaliov1alpha1.VersionedDeployment {
 	result := temporaliov1alpha1.VersionedDeployment{
 		Healthy:            false,
 		BuildID:            buildID,
@@ -51,7 +51,7 @@ func (c *versionedDeploymentCollection) GetVersionedDeployment(buildID string) *
 	}
 
 	// Set deployment ref and health status
-	if d, ok := c.GetDeployment(buildID); ok {
+	if d, ok := c.getDeployment(buildID); ok {
 		// Check if deployment condition is "available"
 		var healthy bool
 		// TODO(jlegrone): do we need to sort conditions by timestamp?
@@ -137,7 +137,7 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 
 	desiredBuildID = computeBuildID(workerDeploy.Spec)
 
-	// GetVersionedDeployment managed worker deployments
+	// Get managed worker deployments
 	var childDeploys appsv1.DeploymentList
 	if err := r.List(ctx, &childDeploys, client.InNamespace(req.Namespace), client.MatchingFields{deployOwnerKey: req.Name}); err != nil {
 		return nil, fmt.Errorf("unable to list child deployments: %w", err)
@@ -156,7 +156,7 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 		// TODO(jlegrone): implement some error handling (maybe a human deleted the label?)
 	}
 
-	// GetVersionedDeployment worker versioning rules via Temporal API
+	// Get worker versioning rules via Temporal API
 	rules, err := r.WorkflowServiceClient.GetWorkerVersioningRules(ctx, &workflowservice.GetWorkerVersioningRulesRequest{
 		Namespace: workerDeploy.Spec.WorkerOptions.TemporalNamespace,
 		TaskQueue: workerDeploy.Spec.WorkerOptions.TaskQueue,
@@ -193,7 +193,7 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 		// TODO(jlegrone): Do we need to garbage collect assignment rules for versions that have no deployment?
 	}
 
-	// GetVersionedDeployment reachability info for all build IDs associated with the task queue via the Temporal API
+	// Get reachability info for all build IDs associated with the task queue via the Temporal API
 	tq, err := r.WorkflowServiceClient.DescribeTaskQueue(ctx, &workflowservice.DescribeTaskQueueRequest{
 		Namespace: workerDeploy.Spec.WorkerOptions.TemporalNamespace,
 		TaskQueue: &taskqueue.TaskQueue{
@@ -216,12 +216,12 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 		case desiredBuildID, defaultBuildID:
 			continue
 		}
-		deprecatedVersions = append(deprecatedVersions, versions.GetVersionedDeployment(buildID))
+		deprecatedVersions = append(deprecatedVersions, versions.getVersionedDeployment(buildID))
 	}
 
 	return &temporaliov1alpha1.TemporalWorkerStatus{
-		TargetVersion:      versions.GetVersionedDeployment(desiredBuildID),
-		DefaultVersion:     versions.GetVersionedDeployment(defaultBuildID),
+		TargetVersion:      versions.getVersionedDeployment(desiredBuildID),
+		DefaultVersion:     versions.getVersionedDeployment(defaultBuildID),
 		DeprecatedVersions: deprecatedVersions,
 	}, nil
 }
