@@ -74,6 +74,11 @@ func (c *versionedDeploymentCollection) GetVersionedDeployment(buildID string) *
 		result.Reachability = status
 	}
 
+	// Set stats
+	if stats, ok := c.stats[buildID]; ok {
+		result.Statistics = &stats
+	}
+
 	return &result
 }
 
