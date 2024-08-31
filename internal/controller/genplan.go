@@ -18,6 +18,8 @@ import (
 )
 
 type plan struct {
+	TemporalNamespace string
+	TaskQueue         string
 	DeleteDeployments []*appsv1.Deployment
 	CreateDeployment  *appsv1.Deployment
 	ScaleDeployments  map[*v1.ObjectReference]uint32
@@ -25,8 +27,14 @@ type plan struct {
 	RegisterDefaultVersion string
 	// Promote an existing build ID to the default
 	PromoteExistingVersion string
-	TemporalNamespace      string
-	TaskQueue              string
+	// Set ramp for a build ID
+	ApplyRamp *rampConfig
+}
+
+type rampConfig struct {
+	buildID string
+	// Acceptable values [0,100]
+	rampPercentage uint8
 }
 
 func (r *TemporalWorkerReconciler) generatePlan(
@@ -52,8 +60,8 @@ func (r *TemporalWorkerReconciler) generatePlan(
 		}
 	}
 
-	// TODO(jlegrone): generate warnings/events on the TemporalWorker resource when version sets exist with no
-	//                 corresponding Deployment.
+	// TODO(jlegrone): generate warnings/events on the TemporalWorker resource when buildIDs are reachable
+	//                 but have no corresponding Deployment.
 
 	// Scale or delete deployments based on reachability
 	for _, versionSet := range observedState.DeprecatedVersions {
@@ -90,8 +98,8 @@ func (r *TemporalWorkerReconciler) generatePlan(
 
 	desiredBuildID := computeBuildID(desiredState.Spec)
 
-	if nextVersionSet := observedState.TargetVersion; nextVersionSet != nil {
-		if nextVersionSet.Deployment == nil {
+	if targetVersion := observedState.TargetVersion; targetVersion != nil {
+		if targetVersion.Deployment == nil {
 			// Create new deployment from current pod template when it doesn't exist
 			d, err := r.newDeployment(desiredState, desiredBuildID)
 			if err != nil {
@@ -103,16 +111,16 @@ func (r *TemporalWorkerReconciler) generatePlan(
 			} else {
 				plan.ScaleDeployments[newObjectRef(existing)] = uint32(*desiredState.Spec.Replicas)
 			}
-		} else if nextVersionSet.BuildID != desiredBuildID {
+		} else if targetVersion.BuildID != desiredBuildID {
 			// Delete the latest (unregistered) deployment if the desired build ID has changed
-			d, err := r.getDeployment(ctx, *nextVersionSet.Deployment)
+			d, err := r.getDeployment(ctx, *targetVersion.Deployment)
 			if err != nil {
 				return nil, err
 			}
 			plan.DeleteDeployments = append(plan.DeleteDeployments, d)
-		} else if nextVersionSet.Healthy {
+		} else if targetVersion.Healthy {
 			// Register the latest deployment as default version set if it is healthy
-			switch nextVersionSet.Reachability {
+			switch targetVersion.Reachability {
 			case temporaliov1alpha1.ReachabilityStatusReachable,
 				temporaliov1alpha1.ReachabilityStatusClosedOnly,
 				temporaliov1alpha1.ReachabilityStatusUnreachable:
@@ -120,7 +128,7 @@ func (r *TemporalWorkerReconciler) generatePlan(
 			case temporaliov1alpha1.ReachabilityStatusNotRegistered:
 				plan.RegisterDefaultVersion = desiredBuildID
 			default:
-				return nil, fmt.Errorf("unhandled reachability status: %s", nextVersionSet.Reachability)
+				return nil, fmt.Errorf("unhandled reachability status: %s", targetVersion.Reachability)
 			}
 		}
 	}
