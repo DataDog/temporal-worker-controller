@@ -26,8 +26,10 @@ type versionedDeploymentCollection struct {
 	redirectBuildIDFromTo map[string]string
 	// map of build IDs to ramp percentages [0,100]
 	rampPercentages map[string]uint8
-	// map of build IDs to reachability status
-	reachabilityInfo map[string]temporaliov1alpha1.ReachabilityStatus
+	// map of build IDs to task queue stats
+	stats map[string]*taskqueue.TaskQueueStats
+	// map of build IDs to reachability
+	reachabilityStatus map[string]temporaliov1alpha1.ReachabilityStatus
 }
 
 func (c *versionedDeploymentCollection) GetDeployment(buildID string) (*appsv1.Deployment, bool) {
@@ -43,7 +45,7 @@ func (c *versionedDeploymentCollection) GetVersionedDeployment(buildID string) *
 		Healthy:            false,
 		BuildID:            buildID,
 		CompatibleBuildIDs: nil,
-		Reachability:       c.reachabilityInfo[buildID],
+		Reachability:       "",
 		RampPercentage:     nil,
 		Deployment:         nil,
 	}
@@ -67,6 +69,11 @@ func (c *versionedDeploymentCollection) GetVersionedDeployment(buildID string) *
 		result.RampPercentage = &ramp
 	}
 
+	// Set reachability
+	if status, ok := c.reachabilityStatus[buildID]; ok {
+		result.Reachability = status
+	}
+
 	return &result
 }
 
@@ -82,6 +89,18 @@ func (c *versionedDeploymentCollection) AddAssignmentRule(rule *taskqueue.BuildI
 	rule.GetPercentageRamp().GetRampPercentage()
 }
 
+func (c *versionedDeploymentCollection) AddReachability(buildID string, info *taskqueue.TaskQueueVersionInfo) error {
+	switch info.GetTaskReachability() {
+	case enums.BUILD_ID_TASK_REACHABILITY_REACHABLE:
+		c.reachabilityStatus[buildID] = temporaliov1alpha1.ReachabilityStatusReachable
+	case enums.BUILD_ID_TASK_REACHABILITY_CLOSED_WORKFLOWS_ONLY:
+		c.reachabilityStatus[buildID] = temporaliov1alpha1.ReachabilityStatusClosedOnly
+	case enums.BUILD_ID_TASK_REACHABILITY_UNREACHABLE:
+		c.reachabilityStatus[buildID] = temporaliov1alpha1.ReachabilityStatusUnreachable
+	}
+	return fmt.Errorf("unhandled build id reachability: %s", info.GetTaskReachability().String())
+}
+
 func newVersionedDeploymentCollection() versionedDeploymentCollection {
 	return versionedDeploymentCollection{
 		buildIDsToDeployments: make(map[string]*appsv1.Deployment),
@@ -91,14 +110,14 @@ func newVersionedDeploymentCollection() versionedDeploymentCollection {
 
 func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.Request, workerDeploy temporaliov1alpha1.TemporalWorker) (*temporaliov1alpha1.TemporalWorkerStatus, error) {
 	var (
-		targetVersion, defaultVersion *temporaliov1alpha1.VersionedDeployment
-		deprecatedVersions            []*temporaliov1alpha1.VersionedDeployment
-		desiredBuildID                = computeBuildID(workerDeploy.Spec)
-		reachability                  = make(reachabilityInfo)
-		versionedDeployments          = newVersionedDeploymentCollection()
+		desiredBuildID, defaultBuildID string
+		deployedBuildIDs               []string
+		versions                       = newVersionedDeploymentCollection()
 	)
 
-	// Get managed worker deployments
+	desiredBuildID = computeBuildID(workerDeploy.Spec)
+
+	// GetVersionedDeployment managed worker deployments
 	var childDeploys appsv1.DeploymentList
 	if err := r.List(ctx, &childDeploys, client.InNamespace(req.Namespace), client.MatchingFields{deployOwnerKey: req.Name}); err != nil {
 		return nil, fmt.Errorf("unable to list child deployments: %w", err)
@@ -107,22 +126,17 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 	sort.SliceStable(childDeploys.Items, func(i, j int) bool {
 		return childDeploys.Items[i].ObjectMeta.CreationTimestamp.Before(&childDeploys.Items[j].ObjectMeta.CreationTimestamp)
 	})
-
-	// Gather build IDs for each managed deployment
+	// Track each deployment by build ID
 	for _, childDeploy := range childDeploys.Items {
 		if buildID, ok := childDeploy.GetLabels()[buildIDLabel]; ok {
-			childDeploy.GetObjectMeta().GetCreationTimestamp()
-			versionedDeployments.AddDeployment(buildID, &childDeploy)
+			versions.AddDeployment(buildID, &childDeploy)
+			deployedBuildIDs = append(deployedBuildIDs, buildID)
 			continue
 		}
 		// TODO(jlegrone): implement some error handling (maybe a human deleted the label?)
 	}
 
-	// Get all task queue version sets via Temporal API
-	var (
-		registeredBuildIDs = make(map[string]struct{})
-	)
-
+	// GetVersionedDeployment worker versioning rules via Temporal API
 	rules, err := r.WorkflowServiceClient.GetWorkerVersioningRules(ctx, &workflowservice.GetWorkerVersioningRulesRequest{
 		Namespace: workerDeploy.Spec.WorkerOptions.TemporalNamespace,
 		TaskQueue: workerDeploy.Spec.WorkerOptions.TaskQueue,
@@ -132,60 +146,34 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 	}
 	// Register redirect rules
 	for _, rule := range rules.GetCompatibleRedirectRules() {
-		versionedDeployments.AddBuildIDRedirect(rule.GetRule().GetSourceBuildId(), rule.GetRule().GetTargetBuildId())
+		versions.AddBuildIDRedirect(rule.GetRule().GetSourceBuildId(), rule.GetRule().GetTargetBuildId())
 	}
-
-	var defaultVersionFound bool
+	// Set default version and deprecated versions based on assignment rules
 	for _, rule := range rules.GetAssignmentRules() {
-		// Exit the loop early if we've already found the default version; any assignment rules
-		// after this point are not applicable.
+		ruleTargetBuildID := rule.GetRule().GetTargetBuildId()
+		// Register the rule
+		versions.AddAssignmentRule(rule.GetRule())
+
+		// TODO(jlegrone): Do rules need to be sorted by create time?
+
+		// Set the default build ID if this is the first assignment rule without
+		// a ramp.
+		if defaultBuildID == "" && rule.GetRule().GetRamp() == nil {
+			defaultBuildID = ruleTargetBuildID
+			continue
+		}
+		// Don't mark the desired build ID as deprecated
+		if ruleTargetBuildID == desiredBuildID {
+			continue
+		}
+		// All rules after this point are not applicable since there is already a default build ID,
+		// so assume they are deprecated.
 		// TODO(jlegrone): Double check that this is correct. We also might need to delete unused
 		//                 assignment rules during the plan phase.
-		// TODO(jlegrone): Do rules need to be sorted by create time?
-		if defaultVersionFound {
-			break
-		}
-
 		// TODO(jlegrone): Do we need to garbage collect assignment rules for versions that have no deployment?
-		if rule.GetRule().GetTargetBuildId() == desiredBuildID {
-			// Set the target version
-			if d, ok := versionedDeployments.GetDeployment(rule.GetRule().GetTargetBuildId()); ok {
-				targetVersion = &temporaliov1alpha1.VersionedDeployment{
-					Healthy:      false, // todo
-					BuildID:      rule.GetRule().GetTargetBuildId(),
-					Reachability: "", // This should be set later on
-					Deployment:   newObjectRef(d),
-				}
-			}
-		} else {
-			ramp := rule.GetRule().GetRamp()
-			// Assign the default version if this is the first with no ramp value
-			if ramp == nil {
-				defaultVersionFound = true
-				if d, ok := versionedDeployments.GetDeployment(rule.GetRule().GetTargetBuildId()); ok {
-					deprecatedVersions = append(deprecatedVersions, &temporaliov1alpha1.VersionedDeployment{
-						// Some way of indicating this is the default?
-						Healthy:      false, // todo
-						BuildID:      rule.GetRule().GetTargetBuildId(),
-						Reachability: temporaliov1alpha1.ReachabilityStatusReachable, // Should this be updated later on?
-						Deployment:   newObjectRef(d),
-					})
-				}
-			} else {
-				// Add to deprecated versions
-				if d, ok := versionedDeployments.GetDeployment(rule.GetRule().GetTargetBuildId()); ok {
-					deprecatedVersions = append(deprecatedVersions, &temporaliov1alpha1.VersionedDeployment{
-						// Some way of indicating this is the default?
-						Healthy:      false, // todo
-						BuildID:      rule.GetRule().GetTargetBuildId(),
-						Reachability: temporaliov1alpha1.ReachabilityStatusReachable, // Should this be updated later on?
-						Deployment:   newObjectRef(d),
-					})
-				}
-			}
-		}
 	}
 
+	// GetVersionedDeployment reachability info for all build IDs associated with the task queue via the Temporal API
 	tq, err := r.WorkflowServiceClient.DescribeTaskQueue(ctx, &workflowservice.DescribeTaskQueueRequest{
 		Namespace: workerDeploy.Spec.WorkerOptions.TemporalNamespace,
 		TaskQueue: &taskqueue.TaskQueue{
@@ -196,125 +184,26 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 	if err != nil {
 		return nil, fmt.Errorf("unable to describe task queue: %w", err)
 	}
-
 	for buildID, info := range tq.GetVersionsInfo() {
-		registeredBuildIDs[buildID] = struct{}{}
-
-		fmt.Println(buildID)
-		info.GetTaskReachability()
-		for _, typeInfo := range info.GetTypesInfo() {
-			typeInfo.GetStats()
-			typeInfo.GetPollers()
+		if err := versions.AddReachability(buildID, info); err != nil {
+			return nil, fmt.Errorf("error computing reachability for build ID %q: %w", buildID, err)
 		}
 	}
 
-	// Handle unregistered deployments
-	for id := range buildIDsToDeployments {
-		// Skip if build ID is already registered with Temporal
-		if _, ok := registeredBuildIDs[id]; ok {
+	var deprecatedVersions []*temporaliov1alpha1.VersionedDeployment
+	for _, buildID := range deployedBuildIDs {
+		switch buildID {
+		case desiredBuildID, defaultBuildID:
 			continue
 		}
-		// Otherwise, mark the build ID as unregistered
-		reachability[id] = temporaliov1alpha1.ReachabilityStatusNotRegistered
-
-		d := buildIDsToDeployments[id]
-
-		// If the deployment is the desired build ID, then it should be the next version set.
-		if id == desiredBuildID {
-			// Check if deployment condition is "available"
-			var healthy bool
-			// TODO(jlegrone): do we need to sort conditions by timestamp?
-			for _, c := range d.Status.Conditions {
-				if c.Type == appsv1.DeploymentAvailable && c.Status == v1.ConditionTrue {
-					healthy = true
-				}
-			}
-
-			targetVersion = &temporaliov1alpha1.VersionedDeployment{
-				Healthy:      healthy,
-				BuildID:      desiredBuildID,
-				Reachability: "", // This should be set later on
-				Deployment:   newObjectRef(d),
-			}
-		} else {
-			// Otherwise it should be deprecated and marked for deletion.
-			deprecatedVersions = append(deprecatedVersions, &temporaliov1alpha1.VersionedDeployment{
-				Reachability: "", // This should be set later on
-				Deployment:   newObjectRef(d),
-				BuildID:      id,
-			})
-		}
-	}
-
-	// Set next version set's build ID if it doesn't exist yet.
-	// The deployment will be created by the next reconciliation loop.
-	if targetVersion == nil && (defaultVersion == nil || defaultVersion.BuildID != desiredBuildID) {
-		targetVersion = &temporaliov1alpha1.VersionedDeployment{
-			Deployment:   nil,
-			BuildID:      desiredBuildID,
-			Reachability: "", // This should be set later on
-		}
-	}
-
-	allVersionSets := append([]*temporaliov1alpha1.VersionedDeployment{}, deprecatedVersions...)
-	if defaultVersion != nil {
-		allVersionSets = append(allVersionSets, defaultVersion)
-	}
-	if targetVersion != nil {
-		allVersionSets = append(allVersionSets, targetVersion)
-	}
-	for _, versionSet := range allVersionSets {
-		s := reachability.getStatus(versionSet)
-		versionSet.Reachability = s
+		deprecatedVersions = append(deprecatedVersions, versions.GetVersionedDeployment(buildID))
 	}
 
 	return &temporaliov1alpha1.TemporalWorkerStatus{
-		TargetVersion:      targetVersion,
-		DefaultVersion:     defaultVersion,
+		TargetVersion:      versions.GetVersionedDeployment(desiredBuildID),
+		DefaultVersion:     versions.GetVersionedDeployment(defaultBuildID),
 		DeprecatedVersions: deprecatedVersions,
 	}, nil
-}
-
-func getReachability(
-	ctx context.Context,
-	c workflowservice.WorkflowServiceClient,
-	buildIDs []string,
-	temporalNamespace string,
-	taskQueue string,
-) (reachabilityInfo, error) {
-	result := make(reachabilityInfo)
-
-	tq, err := c.DescribeTaskQueue(ctx, &workflowservice.DescribeTaskQueueRequest{
-		Namespace: temporalNamespace,
-		TaskQueue: &taskqueue.TaskQueue{
-			Name: taskQueue,
-			//Kind: 0, // defaults to "normal"
-		},
-		ReportTaskReachability: true,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("unable to describe task queue: %w", err)
-	}
-
-	for _, buildID := range buildIDs {
-		versionInfo, ok := tq.GetVersionsInfo()[buildID]
-		if !ok {
-			result[buildID] = temporaliov1alpha1.ReachabilityStatusNotRegistered
-			continue
-		}
-		switch versionInfo.GetTaskReachability() {
-		case enums.BUILD_ID_TASK_REACHABILITY_REACHABLE:
-			result[buildID] = temporaliov1alpha1.ReachabilityStatusReachable
-		case enums.BUILD_ID_TASK_REACHABILITY_CLOSED_WORKFLOWS_ONLY:
-			result[buildID] = temporaliov1alpha1.ReachabilityStatusClosedOnly
-		case enums.BUILD_ID_TASK_REACHABILITY_UNREACHABLE:
-			result[buildID] = temporaliov1alpha1.ReachabilityStatusUnreachable
-		default:
-			return nil, fmt.Errorf("unhandled build id reachability: %s", versionInfo.GetTaskReachability().String())
-		}
-	}
-
-	return result, nil
 }
 
 type reachabilityInfo map[string]temporaliov1alpha1.ReachabilityStatus
