@@ -54,7 +54,7 @@ func (c *versionedDeploymentCollection) getVersionedDeployment(buildID string) *
 	if d, ok := c.getDeployment(buildID); ok {
 		// Check if deployment condition is "available"
 		var healthy bool
-		// TODO(jlegrone): do we need to sort conditions by timestamp?
+		// TODO(jlegrone): do we need to sort conditions by timestamp to check only latest?
 		for _, c := range d.Status.Conditions {
 			if c.Type == appsv1.DeploymentAvailable && c.Status == v1.ConditionTrue {
 				healthy = true
@@ -82,19 +82,19 @@ func (c *versionedDeploymentCollection) getVersionedDeployment(buildID string) *
 	return &result
 }
 
-func (c *versionedDeploymentCollection) AddBuildIDRedirect(from, to string) {
+func (c *versionedDeploymentCollection) addBuildIDRedirect(from, to string) {
 	c.redirectBuildIDFromTo[from] = to
 }
 
-func (c *versionedDeploymentCollection) AddDeployment(buildID string, d *appsv1.Deployment) {
+func (c *versionedDeploymentCollection) addDeployment(buildID string, d *appsv1.Deployment) {
 	c.buildIDsToDeployments[buildID] = d
 }
 
-func (c *versionedDeploymentCollection) AddAssignmentRule(rule *taskqueue.BuildIdAssignmentRule) {
+func (c *versionedDeploymentCollection) addAssignmentRule(rule *taskqueue.BuildIdAssignmentRule) {
 	rule.GetPercentageRamp().GetRampPercentage()
 }
 
-func (c *versionedDeploymentCollection) AddReachability(buildID string, info *taskqueue.TaskQueueVersionInfo) error {
+func (c *versionedDeploymentCollection) addReachability(buildID string, info *taskqueue.TaskQueueVersionInfo) error {
 	switch info.GetTaskReachability() {
 	case enums.BUILD_ID_TASK_REACHABILITY_REACHABLE:
 		c.reachabilityStatus[buildID] = temporaliov1alpha1.ReachabilityStatusReachable
@@ -149,7 +149,7 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 	// Track each deployment by build ID
 	for _, childDeploy := range childDeploys.Items {
 		if buildID, ok := childDeploy.GetLabels()[buildIDLabel]; ok {
-			versions.AddDeployment(buildID, &childDeploy)
+			versions.addDeployment(buildID, &childDeploy)
 			deployedBuildIDs = append(deployedBuildIDs, buildID)
 			continue
 		}
@@ -166,13 +166,13 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 	}
 	// Register redirect rules
 	for _, rule := range rules.GetCompatibleRedirectRules() {
-		versions.AddBuildIDRedirect(rule.GetRule().GetSourceBuildId(), rule.GetRule().GetTargetBuildId())
+		versions.addBuildIDRedirect(rule.GetRule().GetSourceBuildId(), rule.GetRule().GetTargetBuildId())
 	}
 	// Set default version and deprecated versions based on assignment rules
 	for _, rule := range rules.GetAssignmentRules() {
 		ruleTargetBuildID := rule.GetRule().GetTargetBuildId()
 		// Register the rule
-		versions.AddAssignmentRule(rule.GetRule())
+		versions.addAssignmentRule(rule.GetRule())
 
 		// TODO(jlegrone): Do rules need to be sorted by create time?
 
@@ -205,7 +205,7 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 		return nil, fmt.Errorf("unable to describe task queue: %w", err)
 	}
 	for buildID, info := range tq.GetVersionsInfo() {
-		if err := versions.AddReachability(buildID, info); err != nil {
+		if err := versions.addReachability(buildID, info); err != nil {
 			return nil, fmt.Errorf("error computing reachability for build ID %q: %w", buildID, err)
 		}
 	}
