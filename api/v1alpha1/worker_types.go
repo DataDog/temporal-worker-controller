@@ -48,6 +48,9 @@ type TemporalWorkerSpec struct {
 	// not be estimated during the time a deployment is paused. Defaults to 600s.
 	ProgressDeadlineSeconds *int32 `json:"progressDeadlineSeconds,omitempty" protobuf:"varint,9,opt,name=progressDeadlineSeconds"`
 
+	// TODO(jlegrone): configure new version rollout strategies (progressive, blue/green, manual)
+	//RolloutStrategy any
+
 	// TODO(jlegrone): add godoc
 	WorkerOptions WorkerOptions `json:"workerOptions"`
 }
@@ -76,33 +79,49 @@ const (
 
 // TemporalWorkerStatus defines the observed state of TemporalWorker
 type TemporalWorkerStatus struct {
-	// 	Remember, status should be able to be reconstituted from the state of the world, so it’s generally not a good
-	//	idea to read from the status of the root object. Instead, you should reconstruct it every run.
+	// Remember, status should be able to be reconstituted from the state of the world,
+	// so it’s generally not a good idea to read from the status of the root object.
+	// Instead, you should reconstruct it every run.
 
 	// TargetVersion is the desired next version. If the deployment is nil,
 	// then the controller should create it. If not nil, the controller should
 	// wait for it to become healthy and then move it to the DefaultVersionSet.
 	TargetVersion *VersionedDeployment `json:"targetVersion"`
-	//// DefaultVersion is the deployment that is currently registered with
-	//// Temporal as the default. This must never be nil.
-	//DefaultVersion *VersionedDeployment `json:"defaultVersion"`
+
+	// DefaultVersion is the deployment that is currently registered with
+	// Temporal as the default. This must never be nil.
+	//
+	// RampPercentage should always be nil for this version.
+	DefaultVersion *VersionedDeployment `json:"defaultVersion"`
+
 	// DeprecatedVersions are deployments that are no longer the default. Any
 	// deployments that are unreachable should be deleted by the controller.
+	//
+	// RampPercentage should only be set for DeprecatedVersions when rollout
+	// strategy is set to manual.
 	DeprecatedVersions []*VersionedDeployment `json:"deprecatedVersions,omitempty"`
 }
 
 type VersionedDeployment struct {
 	// Healthy indicates whether the deployment is healthy.
 	Healthy bool `json:"healthy"`
+
 	// The build ID associated with the deployment.
 	BuildID string `json:"buildID"`
+
 	// Other compatible build IDs that redirect to this deployment.
 	CompatibleBuildIDs []string `json:"compatibleBuildIDs,omitempty"`
+
 	// Reachability indicates whether workers in this version set may
 	// be eligible to receive tasks from the Temporal server.
 	Reachability ReachabilityStatus `json:"reachability"`
+
+	// RampPercentage is the percentage of new workflow executions that are
+	// configured to start on this version.
+	//
 	// Acceptable range is [0,100].
 	RampPercentage *uint8 `json:"rampPercentage,omitempty"`
+
 	// A pointer to the version set's managed deployment.
 	Deployment *v1.ObjectReference `json:"deployment"`
 }
