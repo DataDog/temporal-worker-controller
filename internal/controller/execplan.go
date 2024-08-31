@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	"go.temporal.io/api/taskqueue/v1"
 	"go.temporal.io/api/workflowservice/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
@@ -51,30 +52,65 @@ func (r *TemporalWorkerReconciler) executePlan(ctx context.Context, l logr.Logge
 		}
 	}
 
-	// Register default version set
+	// Register default version
 	if p.RegisterDefaultVersion != "" {
 		// Check out API here:
 		// https://github.com/temporalio/api/blob/cfa1a15b960920a47de8ec272873a4ee4db574c4/temporal/api/workflowservice/v1/request_response.proto#L1073-L1132
-		l.Info("registering new default version set", "buildID", p.RegisterDefaultVersion)
-		if _, err := r.WorkflowServiceClient.UpdateWorkerBuildIdCompatibility(ctx, &workflowservice.UpdateWorkerBuildIdCompatibilityRequest{
-			Namespace: p.TemporalNamespace,
-			TaskQueue: p.TaskQueue,
-			Operation: &workflowservice.UpdateWorkerBuildIdCompatibilityRequest_AddNewBuildIdInNewDefaultSet{
-				AddNewBuildIdInNewDefaultSet: p.RegisterDefaultVersion,
-			},
-		}); err != nil {
-			return fmt.Errorf("unable to register default version set: %w", err)
+		l.Info("registering new default version", "buildID", p.RegisterDefaultVersion)
+
+		resp, err := r.WorkflowServiceClient.UpdateWorkerVersioningRules(ctx, &workflowservice.UpdateWorkerVersioningRulesRequest{
+			Namespace:     p.TemporalNamespace,
+			TaskQueue:     p.TaskQueue,
+			ConflictToken: nil,
+			Operation: &workflowservice.UpdateWorkerVersioningRulesRequest_ReplaceAssignmentRule{ReplaceAssignmentRule: &workflowservice.UpdateWorkerVersioningRulesRequest_ReplaceBuildIdAssignmentRule{
+				RuleIndex: 0,
+				Rule: &taskqueue.BuildIdAssignmentRule{
+					TargetBuildId: p.RegisterDefaultVersion,
+					Ramp:          nil,
+				},
+				Force: false,
+			}},
+		})
+		if err != nil {
+			return fmt.Errorf("unable to update versioning rules: %w", err)
 		}
+		// TODO(jlegrone): update conflict token
+		resp.GetConflictToken()
 	} else if p.PromoteExistingVersion != "" {
-		l.Info("promoting existing version set", "buildID", p.PromoteExistingVersion)
-		if _, err := r.WorkflowServiceClient.UpdateWorkerBuildIdCompatibility(ctx, &workflowservice.UpdateWorkerBuildIdCompatibilityRequest{
-			Namespace: p.TemporalNamespace,
-			TaskQueue: p.TaskQueue,
-			Operation: &workflowservice.UpdateWorkerBuildIdCompatibilityRequest_PromoteSetByBuildId{
-				PromoteSetByBuildId: p.PromoteExistingVersion,
-			},
-		}); err != nil {
-			return fmt.Errorf("unable to promote version set: %w", err)
+		l.Info("promoting existing version", "buildID", p.PromoteExistingVersion)
+		//if _, err := r.WorkflowServiceClient.UpdateWorkerBuildIdCompatibility(ctx, &workflowservice.UpdateWorkerBuildIdCompatibilityRequest{
+		//	Namespace: p.TemporalNamespace,
+		//	TaskQueue: p.TaskQueue,
+		//	Operation: &workflowservice.UpdateWorkerBuildIdCompatibilityRequest_PromoteSetByBuildId{
+		//		PromoteSetByBuildId: p.PromoteExistingVersion,
+		//	},
+		//}); err != nil {
+		//	return fmt.Errorf("unable to promote version set: %w", err)
+		//}
+	}
+
+	// Apply ramp
+	if p.ApplyRamp != nil {
+		l.Info("applying ramp", "buildID", p.ApplyRamp.buildID, "percentage", p.ApplyRamp.rampPercentage)
+		// TODO(jlegrone): override existing ramp value?
+		_, err := r.WorkflowServiceClient.UpdateWorkerVersioningRules(ctx, &workflowservice.UpdateWorkerVersioningRulesRequest{
+			Namespace:     p.TemporalNamespace,
+			TaskQueue:     p.TaskQueue,
+			ConflictToken: nil,
+			Operation: &workflowservice.UpdateWorkerVersioningRulesRequest_InsertAssignmentRule{InsertAssignmentRule: &workflowservice.UpdateWorkerVersioningRulesRequest_InsertBuildIdAssignmentRule{
+				RuleIndex: 0,
+				Rule: &taskqueue.BuildIdAssignmentRule{
+					TargetBuildId: p.RegisterDefaultVersion,
+					Ramp: &taskqueue.BuildIdAssignmentRule_PercentageRamp{
+						PercentageRamp: &taskqueue.RampByPercentage{
+							RampPercentage: float32(p.ApplyRamp.rampPercentage),
+						},
+					},
+				},
+			}},
+		})
+		if err != nil {
+			return fmt.Errorf("unable to update versioning rules: %w", err)
 		}
 	}
 
