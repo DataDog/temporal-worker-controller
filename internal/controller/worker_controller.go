@@ -66,7 +66,7 @@ func (r *TemporalWorkerReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	if err != nil {
 		return ctrl.Result{}, err
 	}
-	workerDeploy.Status = status
+	workerDeploy.Status = *status
 	if err := r.Status().Update(ctx, &workerDeploy); err != nil {
 		// Ignore "object has been modified" errors, since we'll just re-fetch
 		// on the next reconciliation loop.

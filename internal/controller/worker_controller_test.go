@@ -79,14 +79,14 @@ func newTestVersionedDeployment(reachabilityStatus temporaliov1alpha1.Reachabili
 
 func TestGeneratePlan(t *testing.T) {
 	type testCase struct {
-		observedState temporaliov1alpha1.TemporalWorkerStatus
+		observedState *temporaliov1alpha1.TemporalWorkerStatus
 		desiredState  temporaliov1alpha1.TemporalWorker
 		expectedPlan  plan
 	}
 
 	testCases := map[string]testCase{
 		"no action needed": {
-			observedState: temporaliov1alpha1.TemporalWorkerStatus{
+			observedState: &temporaliov1alpha1.TemporalWorkerStatus{
 				DefaultVersion: newTestVersionedDeployment(temporaliov1alpha1.ReachabilityStatusReachable, "foo-a"),
 			},
 			desiredState: newTestWorkerSpec(3),
@@ -97,7 +97,7 @@ func TestGeneratePlan(t *testing.T) {
 			},
 		},
 		"create deployment": {
-			observedState: temporaliov1alpha1.TemporalWorkerStatus{
+			observedState: &temporaliov1alpha1.TemporalWorkerStatus{
 				DefaultVersion: &temporaliov1alpha1.VersionedDeployment{
 					Reachability:       temporaliov1alpha1.ReachabilityStatusReachable,
 					CompatibleBuildIDs: nil,
@@ -113,7 +113,7 @@ func TestGeneratePlan(t *testing.T) {
 			},
 		},
 		"delete unreachable deployments": {
-			observedState: temporaliov1alpha1.TemporalWorkerStatus{
+			observedState: &temporaliov1alpha1.TemporalWorkerStatus{
 				DefaultVersion: newTestVersionedDeployment(temporaliov1alpha1.ReachabilityStatusReachable, "foo-a"),
 				DeprecatedVersions: []*temporaliov1alpha1.VersionedDeployment{
 					newTestVersionedDeployment(temporaliov1alpha1.ReachabilityStatusUnreachable, "foo-b"),

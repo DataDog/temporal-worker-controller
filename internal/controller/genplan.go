@@ -39,7 +39,7 @@ type rampConfig struct {
 
 func (r *TemporalWorkerReconciler) generatePlan(
 	ctx context.Context,
-	observedState temporaliov1alpha1.TemporalWorkerStatus,
+	observedState *temporaliov1alpha1.TemporalWorkerStatus,
 	desiredState temporaliov1alpha1.TemporalWorker,
 ) (*plan, error) {
 	plan := plan{
