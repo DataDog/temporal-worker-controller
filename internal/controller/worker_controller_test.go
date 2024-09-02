@@ -61,17 +61,22 @@ func newTestDeployment(podSpec v1.PodTemplateSpec, desiredReplicas int32) *appsv
 
 func newTestVersionedDeployment(reachabilityStatus temporaliov1alpha1.ReachabilityStatus, deploymentName string) *temporaliov1alpha1.VersionedDeployment {
 	result := temporaliov1alpha1.VersionedDeployment{
-		Reachability:       reachabilityStatus,
-		CompatibleBuildIDs: nil,
+		Healthy:            false,
 		BuildID:            "test-id",
+		CompatibleBuildIDs: nil,
+		Reachability:       reachabilityStatus,
+		RampPercentage:     nil,
+		Statistics:         nil,
+		Deployment:         nil,
 	}
 
 	if deploymentName != "" {
-		panic("todo")
-		//result.Deployment = &v1.ObjectReference{
-		//	Namespace: "foo",
-		//	Name:      deploymentName,
-		//}
+		result.Deployment = &v1.ObjectReference{
+			Namespace: "foo",
+			Name:      deploymentName,
+		}
+	} else {
+		panic("deploymentName required")
 	}
 
 	return &result
