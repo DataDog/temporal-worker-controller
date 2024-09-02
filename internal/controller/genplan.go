@@ -51,7 +51,7 @@ func (r *TemporalWorkerReconciler) generatePlan(
 	// Scale the active deployment if it doesn't match desired replicas
 	if observedState.DefaultVersion != nil && observedState.DefaultVersion.Deployment != nil {
 		defaultDeployment := observedState.DefaultVersion.Deployment
-		d, err := r.getDeployment(ctx, *defaultDeployment)
+		d, err := r.getDeployment(ctx, defaultDeployment)
 		if err != nil {
 			return nil, err
 		}
@@ -70,7 +70,7 @@ func (r *TemporalWorkerReconciler) generatePlan(
 			continue
 		}
 
-		d, err := r.getDeployment(ctx, *versionSet.Deployment)
+		d, err := r.getDeployment(ctx, versionSet.Deployment)
 		if err != nil {
 			return nil, err
 		}
@@ -105,7 +105,7 @@ func (r *TemporalWorkerReconciler) generatePlan(
 			if err != nil {
 				return nil, err
 			}
-			existing, _ := r.getDeployment(ctx, *newObjectRef(d))
+			existing, _ := r.getDeployment(ctx, newObjectRef(d))
 			if existing == nil {
 				plan.CreateDeployment = d
 			} else {
@@ -113,7 +113,7 @@ func (r *TemporalWorkerReconciler) generatePlan(
 			}
 		} else if targetVersion.BuildID != desiredBuildID {
 			// Delete the latest (unregistered) deployment if the desired build ID has changed
-			d, err := r.getDeployment(ctx, *targetVersion.Deployment)
+			d, err := r.getDeployment(ctx, targetVersion.Deployment)
 			if err != nil {
 				return nil, err
 			}
@@ -136,7 +136,7 @@ func (r *TemporalWorkerReconciler) generatePlan(
 	return &plan, nil
 }
 
-func (r *TemporalWorkerReconciler) getDeployment(ctx context.Context, ref v1.ObjectReference) (*appsv1.Deployment, error) {
+func (r *TemporalWorkerReconciler) getDeployment(ctx context.Context, ref *v1.ObjectReference) (*appsv1.Deployment, error) {
 	var d appsv1.Deployment
 	if err := r.Get(ctx, client.ObjectKey{
 		Namespace: ref.Namespace,

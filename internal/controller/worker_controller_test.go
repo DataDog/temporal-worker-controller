@@ -12,6 +12,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	temporaliov1alpha1 "github.com/DataDog/temporal-worker-controller/api/v1alpha1"
 )
@@ -95,11 +96,7 @@ func TestGeneratePlan(t *testing.T) {
 				DefaultVersion: newTestVersionedDeployment(temporaliov1alpha1.ReachabilityStatusReachable, "foo-a"),
 			},
 			desiredState: newTestWorkerSpec(3),
-			expectedPlan: plan{
-				DeleteDeployments:      nil,
-				CreateDeployment:       nil,
-				RegisterDefaultVersion: "",
-			},
+			expectedPlan: plan{},
 		},
 		"create deployment": {
 			observedState: &temporaliov1alpha1.TemporalWorkerStatus{
@@ -148,7 +145,21 @@ func TestGeneratePlan(t *testing.T) {
 		},
 	}
 
-	r := &TemporalWorkerReconciler{}
+	c, err := client.New(nil, client.Options{
+		HTTPClient:     nil,
+		Scheme:         nil,
+		Mapper:         nil,
+		Cache:          nil,
+		WarningHandler: client.WarningHandlerOptions{},
+		DryRun:         nil,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	r := &TemporalWorkerReconciler{
+		Client: c,
+	}
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
