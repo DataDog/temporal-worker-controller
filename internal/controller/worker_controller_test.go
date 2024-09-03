@@ -165,7 +165,12 @@ func TestGeneratePlan(t *testing.T) {
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			actualPlan, err := r.generatePlan(context.Background(), nil, nil, tc.desiredState, tc.observedState)
+			actualPlan, err := r.generatePlan(context.Background(), &temporaliov1alpha1.TemporalWorker{
+				TypeMeta:   metav1.TypeMeta{},
+				ObjectMeta: metav1.ObjectMeta{},
+				Spec:       *tc.desiredState,
+				Status:     *tc.observedState,
+			})
 			assert.NoError(t, err)
 			assert.Equal(t, &tc.expectedPlan, actualPlan)
 		})
