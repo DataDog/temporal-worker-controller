@@ -37,7 +37,7 @@ func getStatusPriority(s temporaliov1alpha1.ReachabilityStatus) int {
 	return 0
 }
 
-func computeBuildID(spec temporaliov1alpha1.TemporalWorkerSpec) string {
+func computeBuildID(spec *temporaliov1alpha1.TemporalWorkerSpec) string {
 	return utils.ComputeHash(&spec.Template, nil)
 }
 

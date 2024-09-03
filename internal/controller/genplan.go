@@ -39,12 +39,12 @@ type rampConfig struct {
 
 func (r *TemporalWorkerReconciler) generatePlan(
 	ctx context.Context,
+	desiredState *temporaliov1alpha1.TemporalWorkerSpec,
 	observedState *temporaliov1alpha1.TemporalWorkerStatus,
-	desiredState temporaliov1alpha1.TemporalWorker,
 ) (*plan, error) {
 	plan := plan{
-		TemporalNamespace: desiredState.Spec.WorkerOptions.TemporalNamespace,
-		TaskQueue:         desiredState.Spec.WorkerOptions.TaskQueue,
+		TemporalNamespace: desiredState.WorkerOptions.TemporalNamespace,
+		TaskQueue:         desiredState.WorkerOptions.TaskQueue,
 		ScaleDeployments:  make(map[*v1.ObjectReference]uint32),
 	}
 
@@ -55,8 +55,8 @@ func (r *TemporalWorkerReconciler) generatePlan(
 		if err != nil {
 			return nil, err
 		}
-		if d.Spec.Replicas != nil && *d.Spec.Replicas != *desiredState.Spec.Replicas {
-			plan.ScaleDeployments[defaultDeployment] = uint32(*desiredState.Spec.Replicas)
+		if d.Spec.Replicas != nil && *d.Spec.Replicas != *desiredState.Replicas {
+			plan.ScaleDeployments[defaultDeployment] = uint32(*desiredState.Replicas)
 		}
 	}
 
@@ -96,7 +96,7 @@ func (r *TemporalWorkerReconciler) generatePlan(
 		}
 	}
 
-	desiredBuildID := computeBuildID(desiredState.Spec)
+	desiredBuildID := computeBuildID(desiredState)
 
 	if targetVersion := observedState.TargetVersion; targetVersion != nil {
 		if targetVersion.Deployment == nil {
@@ -147,57 +147,62 @@ func (r *TemporalWorkerReconciler) getDeployment(ctx context.Context, ref *v1.Ob
 	return &d, nil
 }
 
-func (r *TemporalWorkerReconciler) newDeployment(wd temporaliov1alpha1.TemporalWorker, buildID string) (*appsv1.Deployment, error) {
-	d := newDeploymentWithoutOwnerRef(wd, buildID)
-	if err := ctrl.SetControllerReference(&wd, d, r.Scheme); err != nil {
+func (r *TemporalWorkerReconciler) newDeployment(wd *temporaliov1alpha1.TemporalWorker, buildID string) (*appsv1.Deployment, error) {
+	d := newDeploymentWithoutOwnerRef(&wd.TypeMeta, &wd.ObjectMeta, &wd.Spec, buildID)
+	if err := ctrl.SetControllerReference(wd, d, r.Scheme); err != nil {
 		return nil, err
 	}
 	return d, nil
 }
 
-func newDeploymentWithoutOwnerRef(deployment temporaliov1alpha1.TemporalWorker, buildID string) *appsv1.Deployment {
+func newDeploymentWithoutOwnerRef(
+	typeMeta *metav1.TypeMeta,
+	objectMeta *metav1.ObjectMeta,
+	spec *temporaliov1alpha1.TemporalWorkerSpec,
+	buildID string,
+) *appsv1.Deployment {
 	labels := map[string]string{}
 	// Merge labels from TemporalWorker with build ID
-	for k, v := range deployment.Spec.Selector.MatchLabels {
+	for k, v := range spec.Selector.MatchLabels {
 		labels[k] = v
 	}
 	labels[buildIDLabel] = buildID
 	// Set pod labels
-	if deployment.Spec.Template.Labels == nil {
-		deployment.Spec.Template.Labels = labels
+	if spec.Template.Labels == nil {
+		spec.Template.Labels = labels
 	} else {
 		for k, v := range labels {
-			deployment.Spec.Template.Labels[k] = v
+			spec.Template.Labels[k] = v
 		}
 	}
 
-	for i, container := range deployment.Spec.Template.Spec.Containers {
+	for i, container := range spec.Template.Spec.Containers {
 		container.Env = append(container.Env, v1.EnvVar{
 			Name:  "TEMPORAL_NAMESPACE",
-			Value: deployment.Spec.WorkerOptions.TemporalNamespace,
+			Value: spec.WorkerOptions.TemporalNamespace,
 		}, v1.EnvVar{
 			Name:  "TEMPORAL_TASK_QUEUE",
-			Value: deployment.Spec.WorkerOptions.TaskQueue,
+			Value: spec.WorkerOptions.TaskQueue,
 		}, v1.EnvVar{
 			Name:  "TEMPORAL_BUILD_ID",
 			Value: buildID,
 		})
-		deployment.Spec.Template.Spec.Containers[i] = container
+		spec.Template.Spec.Containers[i] = container
 	}
 
 	blockOwnerDeletion := true
 
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:                       fmt.Sprintf("%s-%s", deployment.ObjectMeta.Name, buildID),
-			Namespace:                  deployment.ObjectMeta.Namespace,
+			Name:                       fmt.Sprintf("%s-%s", objectMeta.Name, buildID),
+			Namespace:                  objectMeta.Namespace,
 			DeletionGracePeriodSeconds: nil,
 			Labels:                     labels,
 			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         deployment.TypeMeta.APIVersion,
-				Kind:               deployment.TypeMeta.Kind,
-				Name:               deployment.ObjectMeta.Name,
-				UID:                deployment.ObjectMeta.UID,
+				APIVersion:         typeMeta.APIVersion,
+				Kind:               typeMeta.Kind,
+				Name:               objectMeta.Name,
+				UID:                objectMeta.UID,
 				BlockOwnerDeletion: &blockOwnerDeletion,
 				Controller:         nil,
 			}},
@@ -206,12 +211,12 @@ func newDeploymentWithoutOwnerRef(deployment temporaliov1alpha1.TemporalWorker, 
 			Finalizers: nil,
 		},
 		Spec: appsv1.DeploymentSpec{
-			Replicas: deployment.Spec.Replicas,
+			Replicas: spec.Replicas,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: labels,
 			},
-			Template:        deployment.Spec.Template,
-			MinReadySeconds: deployment.Spec.MinReadySeconds,
+			Template:        spec.Template,
+			MinReadySeconds: spec.MinReadySeconds,
 		},
 	}
 }
