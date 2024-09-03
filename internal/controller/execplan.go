@@ -52,54 +52,54 @@ func (r *TemporalWorkerReconciler) executePlan(ctx context.Context, l logr.Logge
 		}
 	}
 
-	// Register default version
-	if p.RegisterDefaultVersion != "" {
-		// Check out API here:
-		// https://github.com/temporalio/api/blob/cfa1a15b960920a47de8ec272873a4ee4db574c4/temporal/api/workflowservice/v1/request_response.proto#L1073-L1132
-		l.Info("registering new default version", "buildID", p.RegisterDefaultVersion)
+	// Register default version or ramp
+	if vcfg := p.UpdateVersionConfig; vcfg != nil {
+		if vcfg.setDefault {
+			// Check out API here:
+			// https://github.com/temporalio/api/blob/cfa1a15b960920a47de8ec272873a4ee4db574c4/temporal/api/workflowservice/v1/request_response.proto#L1073-L1132
+			l.Info("registering new default version", "buildID", vcfg.buildID)
 
-		resp, err := r.WorkflowServiceClient.UpdateWorkerVersioningRules(ctx, &workflowservice.UpdateWorkerVersioningRulesRequest{
-			Namespace:     p.TemporalNamespace,
-			TaskQueue:     p.TaskQueue,
-			ConflictToken: nil,
-			Operation: &workflowservice.UpdateWorkerVersioningRulesRequest_ReplaceAssignmentRule{ReplaceAssignmentRule: &workflowservice.UpdateWorkerVersioningRulesRequest_ReplaceBuildIdAssignmentRule{
-				RuleIndex: 0,
-				Rule: &taskqueue.BuildIdAssignmentRule{
-					TargetBuildId: p.RegisterDefaultVersion,
-					Ramp:          nil,
-				},
-				Force: false,
-			}},
-		})
-		if err != nil {
-			return fmt.Errorf("unable to update versioning rules: %w", err)
-		}
-		// TODO(jlegrone): update conflict token
-		resp.GetConflictToken()
-	}
-
-	// Apply ramp
-	if p.UpdateVersionConfig != nil {
-		l.Info("applying ramp", "buildID", p.UpdateVersionConfig.buildID, "percentage", p.UpdateVersionConfig.rampPercentage)
-		// TODO(jlegrone): override existing ramp value?
-		_, err := r.WorkflowServiceClient.UpdateWorkerVersioningRules(ctx, &workflowservice.UpdateWorkerVersioningRulesRequest{
-			Namespace:     p.TemporalNamespace,
-			TaskQueue:     p.TaskQueue,
-			ConflictToken: nil,
-			Operation: &workflowservice.UpdateWorkerVersioningRulesRequest_InsertAssignmentRule{InsertAssignmentRule: &workflowservice.UpdateWorkerVersioningRulesRequest_InsertBuildIdAssignmentRule{
-				RuleIndex: 0,
-				Rule: &taskqueue.BuildIdAssignmentRule{
-					TargetBuildId: p.RegisterDefaultVersion,
-					Ramp: &taskqueue.BuildIdAssignmentRule_PercentageRamp{
-						PercentageRamp: &taskqueue.RampByPercentage{
-							RampPercentage: float32(p.UpdateVersionConfig.rampPercentage),
+			resp, err := r.WorkflowServiceClient.UpdateWorkerVersioningRules(ctx, &workflowservice.UpdateWorkerVersioningRulesRequest{
+				Namespace:     p.TemporalNamespace,
+				TaskQueue:     p.TaskQueue,
+				ConflictToken: nil,
+				Operation: &workflowservice.UpdateWorkerVersioningRulesRequest_ReplaceAssignmentRule{ReplaceAssignmentRule: &workflowservice.UpdateWorkerVersioningRulesRequest_ReplaceBuildIdAssignmentRule{
+					RuleIndex: 0,
+					Rule: &taskqueue.BuildIdAssignmentRule{
+						TargetBuildId: vcfg.buildID,
+						Ramp:          nil,
+					},
+					Force: false,
+				}},
+			})
+			if err != nil {
+				return fmt.Errorf("unable to update versioning rules: %w", err)
+			}
+			// TODO(jlegrone): update conflict token
+			resp.GetConflictToken()
+		} else if ramp := vcfg.rampPercentage; ramp > 0 {
+			// Apply ramp
+			l.Info("applying ramp", "buildID", p.UpdateVersionConfig.buildID, "percentage", p.UpdateVersionConfig.rampPercentage)
+			// TODO(jlegrone): override existing ramp value?
+			_, err := r.WorkflowServiceClient.UpdateWorkerVersioningRules(ctx, &workflowservice.UpdateWorkerVersioningRulesRequest{
+				Namespace:     p.TemporalNamespace,
+				TaskQueue:     p.TaskQueue,
+				ConflictToken: nil,
+				Operation: &workflowservice.UpdateWorkerVersioningRulesRequest_InsertAssignmentRule{InsertAssignmentRule: &workflowservice.UpdateWorkerVersioningRulesRequest_InsertBuildIdAssignmentRule{
+					RuleIndex: 0,
+					Rule: &taskqueue.BuildIdAssignmentRule{
+						TargetBuildId: vcfg.buildID,
+						Ramp: &taskqueue.BuildIdAssignmentRule_PercentageRamp{
+							PercentageRamp: &taskqueue.RampByPercentage{
+								RampPercentage: float32(ramp),
+							},
 						},
 					},
-				},
-			}},
-		})
-		if err != nil {
-			return fmt.Errorf("unable to update versioning rules: %w", err)
+				}},
+			})
+			if err != nil {
+				return fmt.Errorf("unable to update versioning rules: %w", err)
+			}
 		}
 	}
 
