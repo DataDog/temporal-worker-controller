@@ -78,7 +78,7 @@ spec:
                               - type: string
                               description: 'PauseDuration indicates how long to pause
                                 before progressing to the next step. TODO(jlegrone):
-                                Use a different type for duration?'
+                                Use a different type here?'
                               x-kubernetes-int-or-string: true
                             rampPercentage:
                               description: "RampPercentage indicates what percentage
@@ -7756,13 +7756,28 @@ spec:
                       service about tasks being dispatched to this worker version.
                     properties:
                       approximateBacklogAge:
-                        anyOf:
-                        - type: integer
-                        - type: string
-                        description: 'Approximate age of the oldest task in the backlog
+                        description: Approximate age of the oldest task in the backlog
                           based on the creation timestamp of the task at the head
-                          of the queue. TODO(jlegrone): Use a different type for duration?'
-                        x-kubernetes-int-or-string: true
+                          of the queue.
+                        properties:
+                          nanos:
+                            description: Signed fractions of a second at nanosecond
+                              resolution of the span of time. Durations less than
+                              one second are represented with a 0 `seconds` field
+                              and a positive or negative `nanos` field. For durations
+                              of one second or more, a non-zero value for the `nanos`
+                              field must be of the same sign as the `seconds` field.
+                              Must be from -999,999,999 to +999,999,999 inclusive.
+                            format: int32
+                            type: integer
+                          seconds:
+                            description: 'Signed seconds of the span of time. Must
+                              be from -315,576,000,000 to +315,576,000,000 inclusive.
+                              Note: these bounds are computed from: 60 sec/min * 60
+                              min/hr * 24 hr/day * 365.25 days/year * 10000 years'
+                            format: int64
+                            type: integer
+                        type: object
                       approximateBacklogCount:
                         description: The approximate number of tasks backlogged in
                           this task queue. May count expired tasks but eventually
@@ -7859,14 +7874,28 @@ spec:
                         service about tasks being dispatched to this worker version.
                       properties:
                         approximateBacklogAge:
-                          anyOf:
-                          - type: integer
-                          - type: string
-                          description: 'Approximate age of the oldest task in the
-                            backlog based on the creation timestamp of the task at
-                            the head of the queue. TODO(jlegrone): Use a different
-                            type for duration?'
-                          x-kubernetes-int-or-string: true
+                          description: Approximate age of the oldest task in the backlog
+                            based on the creation timestamp of the task at the head
+                            of the queue.
+                          properties:
+                            nanos:
+                              description: Signed fractions of a second at nanosecond
+                                resolution of the span of time. Durations less than
+                                one second are represented with a 0 `seconds` field
+                                and a positive or negative `nanos` field. For durations
+                                of one second or more, a non-zero value for the `nanos`
+                                field must be of the same sign as the `seconds` field.
+                                Must be from -999,999,999 to +999,999,999 inclusive.
+                              format: int32
+                              type: integer
+                            seconds:
+                              description: 'Signed seconds of the span of time. Must
+                                be from -315,576,000,000 to +315,576,000,000 inclusive.
+                                Note: these bounds are computed from: 60 sec/min *
+                                60 min/hr * 24 hr/day * 365.25 days/year * 10000 years'
+                              format: int64
+                              type: integer
+                          type: object
                         approximateBacklogCount:
                           description: The approximate number of tasks backlogged
                             in this task queue. May count expired tasks but eventually
@@ -7960,13 +7989,28 @@ spec:
                       service about tasks being dispatched to this worker version.
                     properties:
                       approximateBacklogAge:
-                        anyOf:
-                        - type: integer
-                        - type: string
-                        description: 'Approximate age of the oldest task in the backlog
+                        description: Approximate age of the oldest task in the backlog
                           based on the creation timestamp of the task at the head
-                          of the queue. TODO(jlegrone): Use a different type for duration?'
-                        x-kubernetes-int-or-string: true
+                          of the queue.
+                        properties:
+                          nanos:
+                            description: Signed fractions of a second at nanosecond
+                              resolution of the span of time. Durations less than
+                              one second are represented with a 0 `seconds` field
+                              and a positive or negative `nanos` field. For durations
+                              of one second or more, a non-zero value for the `nanos`
+                              field must be of the same sign as the `seconds` field.
+                              Must be from -999,999,999 to +999,999,999 inclusive.
+                            format: int32
+                            type: integer
+                          seconds:
+                            description: 'Signed seconds of the span of time. Must
+                              be from -315,576,000,000 to +315,576,000,000 inclusive.
+                              Note: these bounds are computed from: 60 sec/min * 60
+                              min/hr * 24 hr/day * 365.25 days/year * 10000 years'
+                            format: int64
+                            type: integer
+                        type: object
                       approximateBacklogCount:
                         description: The approximate number of tasks backlogged in
                           this task queue. May count expired tasks but eventually

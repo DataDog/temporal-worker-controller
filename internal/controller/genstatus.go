@@ -111,9 +111,10 @@ func (c *versionedDeploymentCollection) addReachability(buildID string, info *ta
 	// Compute total stats
 	var totalStats temporaliov1alpha1.QueueStatistics
 	for _, stat := range info.GetTypesInfo() {
-		if backlogAge := stat.GetStats().GetApproximateBacklogAge(); backlogAge.AsDuration() > totalStats.ApproximateBacklogAge.AsDuration() {
-			totalStats.ApproximateBacklogAge = backlogAge
-		}
+		// TODO(jlegrone): Compute max backlog age
+		//if backlogAge := stat.GetStats().GetApproximateBacklogAge(); backlogAge.AsDuration() > totalStats.ApproximateBacklogAge.AsDuration() {
+		//	totalStats.ApproximateBacklogAge = backlogAge
+		//}
 		totalStats.ApproximateBacklogCount += stat.GetStats().GetApproximateBacklogCount()
 		totalStats.TasksAddRate += stat.GetStats().GetTasksAddRate()
 		totalStats.TasksDispatchRate += stat.GetStats().GetTasksDispatchRate()
