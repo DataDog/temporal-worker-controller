@@ -77,13 +77,12 @@ deploy-sample-worker: build-sample-worker ## Deploy the sample worker to the clu
 
 .PHONY: start-temporal-server
 start-temporal-server: ## Start an ephemeral Temporal server with versioning APIs enabled.
-	$(TEMPORAL) server start-dev \
-		--dynamic-config-value frontend.workerVersioningDataAPIs=true \
-		--dynamic-config-value frontend.workerVersioningWorkflowAPIs=true \
-		--dynamic-config-value worker.buildIdScavengerEnabled=true \
-		--dynamic-config-value worker.removableBuildIdDurationSinceDefault=0.001 \
-		--dynamic-config-value frontend.reachabilityQuerySetDurationSinceDefault=0.001 \
-		--ip 0.0.0.0
+	$(TEMPORAL) server start-dev --ip 0.0.0.0 \
+		--dynamic-config-value frontend.workerVersioningRuleAPIs=true \
+		--dynamic-config-value frontend.workerVersioningWorkflowAPIs=true
+#		--dynamic-config-value worker.buildIdScavengerEnabled=true \
+#		--dynamic-config-value worker.removableBuildIdDurationSinceDefault=0.001 \
+#		--dynamic-config-value frontend.reachabilityQuerySetDurationSinceDefault=0.001 \
 
 .PHONY: fmt
 fmt: ## Run go fmt against code.
