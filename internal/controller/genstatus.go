@@ -218,7 +218,10 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, l logr.Lo
 			//Kind: 0, // defaults to "normal"
 		},
 		Versions: &taskqueue.TaskQueueVersionSelection{
-			BuildIds:  deployedBuildIDs,
+			// Including deployed build IDs means that we'll observe the "UnReachable" status even for versions
+			// that are no longer known to the server. Not including this option means we can see the "NotRegistered"
+			// status and trigger deletion rather than scaling to zero.
+			//BuildIds:  deployedBuildIDs,
 			AllActive: true,
 		},
 		ReportStats:            true,

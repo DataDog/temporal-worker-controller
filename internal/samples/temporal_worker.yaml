@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/created-by: worker-controller
   name: sample
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app.kubernetes.io/name: sample
