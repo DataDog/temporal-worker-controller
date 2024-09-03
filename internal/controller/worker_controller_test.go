@@ -170,7 +170,7 @@ func TestGeneratePlan(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{},
 				Spec:       *tc.desiredState,
 				Status:     *tc.observedState,
-			})
+			}, nil)
 			assert.NoError(t, err)
 			assert.Equal(t, &tc.expectedPlan, actualPlan)
 		})
