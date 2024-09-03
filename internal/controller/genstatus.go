@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/go-logr/logr"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/taskqueue/v1"
 	"go.temporal.io/api/workflowservice/v1"
@@ -97,19 +98,23 @@ func (c *versionedDeploymentCollection) addAssignmentRule(rule *taskqueue.BuildI
 }
 
 func (c *versionedDeploymentCollection) addReachability(buildID string, info *taskqueue.TaskQueueVersionInfo) error {
+	info.GetTaskReachability()
+
+	var reachability temporaliov1alpha1.ReachabilityStatus
 	switch info.GetTaskReachability() {
 	case enums.BUILD_ID_TASK_REACHABILITY_REACHABLE:
-		c.reachabilityStatus[buildID] = temporaliov1alpha1.ReachabilityStatusReachable
+		reachability = temporaliov1alpha1.ReachabilityStatusReachable
 	case enums.BUILD_ID_TASK_REACHABILITY_CLOSED_WORKFLOWS_ONLY:
-		c.reachabilityStatus[buildID] = temporaliov1alpha1.ReachabilityStatusClosedOnly
+		reachability = temporaliov1alpha1.ReachabilityStatusClosedOnly
 	case enums.BUILD_ID_TASK_REACHABILITY_UNREACHABLE:
-		c.reachabilityStatus[buildID] = temporaliov1alpha1.ReachabilityStatusUnreachable
+		reachability = temporaliov1alpha1.ReachabilityStatusUnreachable
 	case enums.BUILD_ID_TASK_REACHABILITY_UNSPECIFIED:
 		// TODO(jlegrone): Check why this is happening
-		c.reachabilityStatus[buildID] = temporaliov1alpha1.ReachabilityStatusReachable
+		reachability = temporaliov1alpha1.ReachabilityStatusReachable
 	default:
 		return fmt.Errorf("unhandled build id reachability: %s", info.GetTaskReachability().String())
 	}
+	c.reachabilityStatus[buildID] = reachability
 
 	// Compute total stats
 	var totalStats temporaliov1alpha1.QueueStatistics
@@ -137,7 +142,7 @@ func newVersionedDeploymentCollection() versionedDeploymentCollection {
 	}
 }
 
-func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.Request, workerDeploy *temporaliov1alpha1.TemporalWorker) (*temporaliov1alpha1.TemporalWorkerStatus, *workflowservice.GetWorkerVersioningRulesResponse, error) {
+func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, l logr.Logger, req ctrl.Request, workerDeploy *temporaliov1alpha1.TemporalWorker) (*temporaliov1alpha1.TemporalWorkerStatus, *workflowservice.GetWorkerVersioningRulesResponse, error) {
 	var (
 		desiredBuildID, defaultBuildID string
 		deployedBuildIDs               []string
@@ -215,6 +220,7 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 		return nil, nil, fmt.Errorf("unable to describe task queue: %w", err)
 	}
 	for buildID, info := range tq.GetVersionsInfo() {
+		l.Info("Got build id info", "buildID", buildID, "info", info.GetTaskReachability().String())
 		if err := versions.addReachability(buildID, info); err != nil {
 			return nil, nil, fmt.Errorf("error computing reachability for build ID %q: %w", buildID, err)
 		}
