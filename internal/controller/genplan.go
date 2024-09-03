@@ -87,6 +87,11 @@ func (r *TemporalWorkerReconciler) generatePlan(
 		}
 
 		switch versionSet.Reachability {
+		case temporaliov1alpha1.ReachabilityStatusReachable:
+			// Scale up reachable deployments
+			if d.Spec.Replicas != nil && *d.Spec.Replicas != *w.Spec.Replicas {
+				plan.ScaleDeployments[versionSet.Deployment] = uint32(*w.Spec.Replicas)
+			}
 		case temporaliov1alpha1.ReachabilityStatusUnreachable:
 			// Scale down unreachable deployments. We do this instead
 			// of deleting them so that they can be scaled back up if
