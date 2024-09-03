@@ -30,15 +30,13 @@ var (
 	}
 )
 
-func newTestWorkerSpec(replicas int32) temporaliov1alpha1.TemporalWorker {
-	return temporaliov1alpha1.TemporalWorker{
-		Spec: temporaliov1alpha1.TemporalWorkerSpec{
-			Replicas: &replicas,
-			Template: testPodTemplate,
-			WorkerOptions: temporaliov1alpha1.WorkerOptions{
-				TemporalNamespace: "baz",
-				TaskQueue:         "qux",
-			},
+func newTestWorkerSpec(replicas int32) *temporaliov1alpha1.TemporalWorkerSpec {
+	return &temporaliov1alpha1.TemporalWorkerSpec{
+		Replicas: &replicas,
+		Template: testPodTemplate,
+		WorkerOptions: temporaliov1alpha1.WorkerOptions{
+			TemporalNamespace: "baz",
+			TaskQueue:         "qux",
 		},
 	}
 }
@@ -86,7 +84,7 @@ func newTestVersionedDeployment(reachabilityStatus temporaliov1alpha1.Reachabili
 func TestGeneratePlan(t *testing.T) {
 	type testCase struct {
 		observedState *temporaliov1alpha1.TemporalWorkerStatus
-		desiredState  temporaliov1alpha1.TemporalWorker
+		desiredState  *temporaliov1alpha1.TemporalWorkerSpec
 		expectedPlan  plan
 	}
 
@@ -163,7 +161,7 @@ func TestGeneratePlan(t *testing.T) {
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			actualPlan, err := r.generatePlan(context.Background(), tc.observedState, tc.desiredState)
+			actualPlan, err := r.generatePlan(context.Background(), nil, nil, tc.desiredState, tc.observedState)
 			assert.NoError(t, err)
 			assert.Equal(t, &tc.expectedPlan, actualPlan)
 		})

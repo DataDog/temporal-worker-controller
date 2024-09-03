@@ -135,7 +135,7 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 		versions                       = newVersionedDeploymentCollection()
 	)
 
-	desiredBuildID = computeBuildID(workerDeploy.Spec)
+	desiredBuildID = computeBuildID(&workerDeploy.Spec)
 
 	// Get managed worker deployments
 	var childDeploys appsv1.DeploymentList
