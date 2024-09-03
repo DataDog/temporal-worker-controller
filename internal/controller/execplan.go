@@ -59,7 +59,7 @@ func (r *TemporalWorkerReconciler) executePlan(ctx context.Context, l logr.Logge
 			// https://github.com/temporalio/api/blob/cfa1a15b960920a47de8ec272873a4ee4db574c4/temporal/api/workflowservice/v1/request_response.proto#L1073-L1132
 			l.Info("registering new default version", "buildID", vcfg.buildID)
 
-			resp, err := r.WorkflowServiceClient.UpdateWorkerVersioningRules(ctx, &workflowservice.UpdateWorkerVersioningRulesRequest{
+			_, err := r.WorkflowServiceClient.UpdateWorkerVersioningRules(ctx, &workflowservice.UpdateWorkerVersioningRulesRequest{
 				Namespace:     p.TemporalNamespace,
 				TaskQueue:     p.TaskQueue,
 				ConflictToken: nil,
@@ -75,8 +75,6 @@ func (r *TemporalWorkerReconciler) executePlan(ctx context.Context, l logr.Logge
 			if err != nil {
 				return fmt.Errorf("unable to update versioning rules: %w", err)
 			}
-			// TODO(jlegrone): update conflict token
-			resp.GetConflictToken()
 		} else if ramp := vcfg.rampPercentage; ramp > 0 {
 			// Apply ramp
 			l.Info("applying ramp", "buildID", p.UpdateVersionConfig.buildID, "percentage", p.UpdateVersionConfig.rampPercentage)
