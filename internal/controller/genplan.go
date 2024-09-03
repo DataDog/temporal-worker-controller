@@ -129,40 +129,52 @@ func (r *TemporalWorkerReconciler) generatePlan(
 				return nil, err
 			}
 			plan.DeleteDeployments = append(plan.DeleteDeployments, d)
-		} else if targetVersion.Healthy {
-			// TODO(jlegrone): Support updating ramp instead of setting default version
-			if false {
-				plan.UpdateVersionConfig = &versionConfig{
-					conflictToken:  observedState.VersionConflictToken,
-					buildID:        desiredBuildID,
-					rampPercentage: 1,
-				}
-			} else {
-				// Register the latest deployment as default version set if it is healthy
-				switch targetVersion.Reachability {
-				case temporaliov1alpha1.ReachabilityStatusReachable,
-					temporaliov1alpha1.ReachabilityStatusClosedOnly,
-					temporaliov1alpha1.ReachabilityStatusUnreachable:
-					plan.UpdateVersionConfig = &versionConfig{
-						conflictToken: observedState.VersionConflictToken,
-						buildID:       desiredBuildID,
-						setDefault:    true,
-					}
-				case temporaliov1alpha1.ReachabilityStatusNotRegistered:
-					// TODO(jlegrone): this may no longer be necessary?
-					plan.UpdateVersionConfig = &versionConfig{
-						conflictToken: observedState.VersionConflictToken,
-						buildID:       desiredBuildID,
-						setDefault:    true,
-					}
-				default:
-					return nil, fmt.Errorf("unhandled reachability status: %s", targetVersion.Reachability)
-				}
+		} else {
+			// Update version configuration
+			plan.UpdateVersionConfig = getVersionConfig(desiredState.RolloutStrategy, observedState)
+			if plan.UpdateVersionConfig != nil {
+				plan.UpdateVersionConfig.conflictToken = observedState.VersionConflictToken
 			}
 		}
 	}
 
 	return &plan, nil
+}
+
+func getVersionConfig(strategy *temporaliov1alpha1.RolloutStrategy, status *temporaliov1alpha1.TemporalWorkerStatus) *versionConfig {
+	// Do nothing if rollout strategy is unset or manual
+	if strategy == nil || strategy.Manual != nil {
+		return nil
+	}
+	// Do nothing if target version's deployment is not healthy yet
+	if status.TargetVersion.Healthy {
+		return nil
+	}
+
+	// Set new default version in blue/green rollout mode as soon as next version is healthy
+	if strategy.BlueGreen != nil {
+		return &versionConfig{
+			buildID:    status.TargetVersion.BuildID,
+			setDefault: true,
+		}
+	}
+
+	// Determine the correct percentage ramp
+	if prog := strategy.Progressive; prog != nil {
+		// TODO(jlegrone): break if wait duration not elapsed
+		var currentRamp uint8
+		for _, s := range prog.Steps {
+			if s.RampPercentage != nil {
+				currentRamp = *s.RampPercentage
+			}
+		}
+		return &versionConfig{
+			buildID:        status.TargetVersion.BuildID,
+			rampPercentage: currentRamp,
+		}
+	}
+
+	return nil
 }
 
 func (r *TemporalWorkerReconciler) getDeployment(ctx context.Context, ref *v1.ObjectReference) (*appsv1.Deployment, error) {
