@@ -104,6 +104,9 @@ func (c *versionedDeploymentCollection) addReachability(buildID string, info *ta
 		c.reachabilityStatus[buildID] = temporaliov1alpha1.ReachabilityStatusClosedOnly
 	case enums.BUILD_ID_TASK_REACHABILITY_UNREACHABLE:
 		c.reachabilityStatus[buildID] = temporaliov1alpha1.ReachabilityStatusUnreachable
+	case enums.BUILD_ID_TASK_REACHABILITY_UNSPECIFIED:
+		// TODO(jlegrone): Check why this is happening
+		c.reachabilityStatus[buildID] = temporaliov1alpha1.ReachabilityStatusReachable
 	default:
 		return fmt.Errorf("unhandled build id reachability: %s", info.GetTaskReachability().String())
 	}
@@ -128,6 +131,9 @@ func newVersionedDeploymentCollection() versionedDeploymentCollection {
 	return versionedDeploymentCollection{
 		buildIDsToDeployments: make(map[string]*appsv1.Deployment),
 		redirectBuildIDFromTo: make(map[string]string),
+		rampPercentages:       make(map[string]uint8),
+		stats:                 make(map[string]temporaliov1alpha1.QueueStatistics),
+		reachabilityStatus:    make(map[string]temporaliov1alpha1.ReachabilityStatus),
 	}
 }
 
@@ -198,6 +204,7 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 
 	// Get reachability info for all build IDs associated with the task queue via the Temporal API
 	tq, err := r.WorkflowServiceClient.DescribeTaskQueue(ctx, &workflowservice.DescribeTaskQueueRequest{
+		ApiMode:   enums.DESCRIBE_TASK_QUEUE_MODE_ENHANCED,
 		Namespace: workerDeploy.Spec.WorkerOptions.TemporalNamespace,
 		TaskQueue: &taskqueue.TaskQueue{
 			Name: workerDeploy.Spec.WorkerOptions.TaskQueue,
