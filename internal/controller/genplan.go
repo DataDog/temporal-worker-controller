@@ -18,21 +18,30 @@ import (
 )
 
 type plan struct {
+	// Where to take actions
+
 	TemporalNamespace string
 	TaskQueue         string
+
+	// Which actions to take
+
 	DeleteDeployments []*appsv1.Deployment
 	CreateDeployment  *appsv1.Deployment
 	ScaleDeployments  map[*v1.ObjectReference]uint32
-	// Register a new build ID as the default
-	RegisterDefaultVersion string
-	// Promote an existing build ID to the default
-	PromoteExistingVersion string
-	// Set ramp for a build ID
-	ApplyRamp *rampConfig
+	// Register a new build ID as the default or with ramp
+	UpdateVersionConfig *versionConfig
 }
 
-type rampConfig struct {
+type versionConfig struct {
+	// Token to use for conflict detection
+	conflictToken []byte
+	// build ID for which this config applies
 	buildID string
+
+	// One of rampPercentage OR setDefault must be set to a non-zero value.
+
+	// Set this as the default build ID for all new executions
+	setDefault bool
 	// Acceptable values [0,100]
 	rampPercentage uint8
 }
@@ -121,16 +130,34 @@ func (r *TemporalWorkerReconciler) generatePlan(
 			}
 			plan.DeleteDeployments = append(plan.DeleteDeployments, d)
 		} else if targetVersion.Healthy {
-			// Register the latest deployment as default version set if it is healthy
-			switch targetVersion.Reachability {
-			case temporaliov1alpha1.ReachabilityStatusReachable,
-				temporaliov1alpha1.ReachabilityStatusClosedOnly,
-				temporaliov1alpha1.ReachabilityStatusUnreachable:
-				plan.PromoteExistingVersion = desiredBuildID
-			case temporaliov1alpha1.ReachabilityStatusNotRegistered:
-				plan.RegisterDefaultVersion = desiredBuildID
-			default:
-				return nil, fmt.Errorf("unhandled reachability status: %s", targetVersion.Reachability)
+			// TODO(jlegrone): Support updating ramp instead of setting default version
+			if false {
+				plan.UpdateVersionConfig = &versionConfig{
+					conflictToken:  observedState.VersionConflictToken,
+					buildID:        desiredBuildID,
+					rampPercentage: 1,
+				}
+			} else {
+				// Register the latest deployment as default version set if it is healthy
+				switch targetVersion.Reachability {
+				case temporaliov1alpha1.ReachabilityStatusReachable,
+					temporaliov1alpha1.ReachabilityStatusClosedOnly,
+					temporaliov1alpha1.ReachabilityStatusUnreachable:
+					plan.UpdateVersionConfig = &versionConfig{
+						conflictToken: observedState.VersionConflictToken,
+						buildID:       desiredBuildID,
+						setDefault:    true,
+					}
+				case temporaliov1alpha1.ReachabilityStatusNotRegistered:
+					// TODO(jlegrone): this may no longer be necessary?
+					plan.UpdateVersionConfig = &versionConfig{
+						conflictToken: observedState.VersionConflictToken,
+						buildID:       desiredBuildID,
+						setDefault:    true,
+					}
+				default:
+					return nil, fmt.Errorf("unhandled reachability status: %s", targetVersion.Reachability)
+				}
 			}
 		}
 	}

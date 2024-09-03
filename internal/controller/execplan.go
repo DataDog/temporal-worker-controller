@@ -76,22 +76,11 @@ func (r *TemporalWorkerReconciler) executePlan(ctx context.Context, l logr.Logge
 		}
 		// TODO(jlegrone): update conflict token
 		resp.GetConflictToken()
-	} else if p.PromoteExistingVersion != "" {
-		l.Info("promoting existing version", "buildID", p.PromoteExistingVersion)
-		//if _, err := r.WorkflowServiceClient.UpdateWorkerBuildIdCompatibility(ctx, &workflowservice.UpdateWorkerBuildIdCompatibilityRequest{
-		//	Namespace: p.TemporalNamespace,
-		//	TaskQueue: p.TaskQueue,
-		//	Operation: &workflowservice.UpdateWorkerBuildIdCompatibilityRequest_PromoteSetByBuildId{
-		//		PromoteSetByBuildId: p.PromoteExistingVersion,
-		//	},
-		//}); err != nil {
-		//	return fmt.Errorf("unable to promote version set: %w", err)
-		//}
 	}
 
 	// Apply ramp
-	if p.ApplyRamp != nil {
-		l.Info("applying ramp", "buildID", p.ApplyRamp.buildID, "percentage", p.ApplyRamp.rampPercentage)
+	if p.UpdateVersionConfig != nil {
+		l.Info("applying ramp", "buildID", p.UpdateVersionConfig.buildID, "percentage", p.UpdateVersionConfig.rampPercentage)
 		// TODO(jlegrone): override existing ramp value?
 		_, err := r.WorkflowServiceClient.UpdateWorkerVersioningRules(ctx, &workflowservice.UpdateWorkerVersioningRulesRequest{
 			Namespace:     p.TemporalNamespace,
@@ -103,7 +92,7 @@ func (r *TemporalWorkerReconciler) executePlan(ctx context.Context, l logr.Logge
 					TargetBuildId: p.RegisterDefaultVersion,
 					Ramp: &taskqueue.BuildIdAssignmentRule_PercentageRamp{
 						PercentageRamp: &taskqueue.RampByPercentage{
-							RampPercentage: float32(p.ApplyRamp.rampPercentage),
+							RampPercentage: float32(p.UpdateVersionConfig.rampPercentage),
 						},
 					},
 				},

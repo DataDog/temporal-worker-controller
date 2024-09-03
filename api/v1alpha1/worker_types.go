@@ -101,6 +101,9 @@ type TemporalWorkerStatus struct {
 	// RampPercentage should only be set for DeprecatedVersions when rollout
 	// strategy is set to manual.
 	DeprecatedVersions []*VersionedDeployment `json:"deprecatedVersions,omitempty"`
+
+	// TODO(jlegrone): Add description
+	VersionConflictToken []byte `json:"versionConflictToken"`
 }
 
 type VersionedDeployment struct {

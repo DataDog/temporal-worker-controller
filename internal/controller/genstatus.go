@@ -220,8 +220,9 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 	}
 
 	return &temporaliov1alpha1.TemporalWorkerStatus{
-		TargetVersion:      versions.getVersionedDeployment(desiredBuildID),
-		DefaultVersion:     versions.getVersionedDeployment(defaultBuildID),
-		DeprecatedVersions: deprecatedVersions,
+		TargetVersion:        versions.getVersionedDeployment(desiredBuildID),
+		DefaultVersion:       versions.getVersionedDeployment(defaultBuildID),
+		DeprecatedVersions:   deprecatedVersions,
+		VersionConflictToken: rules.GetConflictToken(),
 	}, nil
 }
