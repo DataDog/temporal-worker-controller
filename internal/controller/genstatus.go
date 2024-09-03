@@ -46,7 +46,7 @@ func (c *versionedDeploymentCollection) getVersionedDeployment(buildID string) *
 		HealthySince:       nil,
 		BuildID:            buildID,
 		CompatibleBuildIDs: nil,
-		Reachability:       "",
+		Reachability:       temporaliov1alpha1.ReachabilityStatusNotRegistered,
 		RampPercentage:     nil,
 		Deployment:         nil,
 	}
