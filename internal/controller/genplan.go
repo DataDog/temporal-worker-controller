@@ -39,6 +39,8 @@ type rampConfig struct {
 
 func (r *TemporalWorkerReconciler) generatePlan(
 	ctx context.Context,
+	typeMeta *metav1.TypeMeta,
+	objectMeta *metav1.ObjectMeta,
 	desiredState *temporaliov1alpha1.TemporalWorkerSpec,
 	observedState *temporaliov1alpha1.TemporalWorkerStatus,
 ) (*plan, error) {
@@ -101,7 +103,7 @@ func (r *TemporalWorkerReconciler) generatePlan(
 	if targetVersion := observedState.TargetVersion; targetVersion != nil {
 		if targetVersion.Deployment == nil {
 			// Create new deployment from current pod template when it doesn't exist
-			d, err := r.newDeployment(desiredState, desiredBuildID)
+			d, err := r.newDeployment(typeMeta, objectMeta, desiredState, desiredBuildID)
 			if err != nil {
 				return nil, err
 			}
@@ -109,7 +111,7 @@ func (r *TemporalWorkerReconciler) generatePlan(
 			if existing == nil {
 				plan.CreateDeployment = d
 			} else {
-				plan.ScaleDeployments[newObjectRef(existing)] = uint32(*desiredState.Spec.Replicas)
+				plan.ScaleDeployments[newObjectRef(existing)] = uint32(*desiredState.Replicas)
 			}
 		} else if targetVersion.BuildID != desiredBuildID {
 			// Delete the latest (unregistered) deployment if the desired build ID has changed
@@ -147,9 +149,14 @@ func (r *TemporalWorkerReconciler) getDeployment(ctx context.Context, ref *v1.Ob
 	return &d, nil
 }
 
-func (r *TemporalWorkerReconciler) newDeployment(wd *temporaliov1alpha1.TemporalWorker, buildID string) (*appsv1.Deployment, error) {
-	d := newDeploymentWithoutOwnerRef(&wd.TypeMeta, &wd.ObjectMeta, &wd.Spec, buildID)
-	if err := ctrl.SetControllerReference(wd, d, r.Scheme); err != nil {
+func (r *TemporalWorkerReconciler) newDeployment(
+	typeMeta *metav1.TypeMeta,
+	objectMeta *metav1.ObjectMeta,
+	spec *temporaliov1alpha1.TemporalWorkerSpec,
+	buildID string,
+) (*appsv1.Deployment, error) {
+	d := newDeploymentWithoutOwnerRef(typeMeta, objectMeta, spec, buildID)
+	if err := ctrl.SetControllerReference(objectMeta, d, r.Scheme); err != nil {
 		return nil, err
 	}
 	return d, nil
