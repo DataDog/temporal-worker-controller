@@ -107,9 +107,9 @@ func TestGeneratePlan(t *testing.T) {
 			},
 			desiredState: newTestWorkerSpec(3),
 			expectedPlan: plan{
-				DeleteDeployments:      nil,
-				CreateDeployment:       newTestDeployment(testPodTemplate, 3),
-				RegisterDefaultVersion: "",
+				DeleteDeployments:   nil,
+				CreateDeployment:    newTestDeployment(testPodTemplate, 3),
+				UpdateVersionConfig: nil,
 			},
 		},
 		"delete unreachable deployments": {
@@ -137,8 +137,8 @@ func TestGeneratePlan(t *testing.T) {
 						},
 					},
 				},
-				CreateDeployment:       nil,
-				RegisterDefaultVersion: "",
+				CreateDeployment:    nil,
+				UpdateVersionConfig: nil,
 			},
 		},
 	}
