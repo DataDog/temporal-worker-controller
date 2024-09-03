@@ -140,13 +140,17 @@ func (r *TemporalWorkerReconciler) generatePlan(
 	return &plan, nil
 }
 
-func getVersionConfig(strategy *temporaliov1alpha1.RolloutStrategy, status *temporaliov1alpha1.TemporalWorkerStatus) *versionConfig {
+func getVersionConfig(rules any, strategy *temporaliov1alpha1.RolloutStrategy, status *temporaliov1alpha1.TemporalWorkerStatus) *versionConfig {
 	// Do nothing if rollout strategy is unset or manual
 	if strategy == nil || strategy.Manual != nil {
 		return nil
 	}
 	// Do nothing if target version's deployment is not healthy yet
 	if status.TargetVersion.HealthySince == nil {
+		return nil
+	}
+	// Do nothing if build ID is already the default
+	if status.TargetVersion.Reachability == temporaliov1alpha1.ReachabilityStatusReachable {
 		return nil
 	}
 

@@ -62,7 +62,7 @@ func (r *TemporalWorkerReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	// Compute a new status from k8s and temporal state
-	status, err := r.generateStatus(ctx, req, workerDeploy)
+	status, err := r.generateStatus(ctx, req, &workerDeploy)
 	if err != nil {
 		return ctrl.Result{}, err
 	}

@@ -59,22 +59,45 @@ func (r *TemporalWorkerReconciler) executePlan(ctx context.Context, l logr.Logge
 			// https://github.com/temporalio/api/blob/cfa1a15b960920a47de8ec272873a4ee4db574c4/temporal/api/workflowservice/v1/request_response.proto#L1073-L1132
 			l.Info("registering new default version", "buildID", vcfg.buildID)
 
-			_, err := r.WorkflowServiceClient.UpdateWorkerVersioningRules(ctx, &workflowservice.UpdateWorkerVersioningRulesRequest{
+			if _, err := r.WorkflowServiceClient.UpdateWorkerVersioningRules(ctx, &workflowservice.UpdateWorkerVersioningRulesRequest{
 				Namespace:     p.TemporalNamespace,
 				TaskQueue:     p.TaskQueue,
-				ConflictToken: nil,
-				Operation: &workflowservice.UpdateWorkerVersioningRulesRequest_ReplaceAssignmentRule{ReplaceAssignmentRule: &workflowservice.UpdateWorkerVersioningRulesRequest_ReplaceBuildIdAssignmentRule{
+				ConflictToken: vcfg.conflictToken,
+				Operation: &workflowservice.UpdateWorkerVersioningRulesRequest_InsertAssignmentRule{InsertAssignmentRule: &workflowservice.UpdateWorkerVersioningRulesRequest_InsertBuildIdAssignmentRule{
 					RuleIndex: 0,
 					Rule: &taskqueue.BuildIdAssignmentRule{
 						TargetBuildId: vcfg.buildID,
 						Ramp:          nil,
 					},
-					Force: false,
 				}},
-			})
-			if err != nil {
+			}); err != nil {
 				return fmt.Errorf("unable to update versioning rules: %w", err)
 			}
+
+			//rules, err := r.WorkflowServiceClient.GetWorkerVersioningRules(ctx, &workflowservice.GetWorkerVersioningRulesRequest{
+			//	Namespace: p.TemporalNamespace,
+			//	TaskQueue: p.TaskQueue,
+			//})
+			//if err != nil {
+			//	return fmt.Errorf("unable to get versioning rules: %w", err)
+			//}
+			//if len(rules.GetAssignmentRules()) > 0 {
+			//	if _, err := r.WorkflowServiceClient.UpdateWorkerVersioningRules(ctx, &workflowservice.UpdateWorkerVersioningRulesRequest{
+			//		Namespace:     p.TemporalNamespace,
+			//		TaskQueue:     p.TaskQueue,
+			//		ConflictToken: vcfg.conflictToken,
+			//		Operation: &workflowservice.UpdateWorkerVersioningRulesRequest_ReplaceAssignmentRule{ReplaceAssignmentRule: &workflowservice.UpdateWorkerVersioningRulesRequest_ReplaceBuildIdAssignmentRule{
+			//			RuleIndex: 0,
+			//			Rule: &taskqueue.BuildIdAssignmentRule{
+			//				TargetBuildId: vcfg.buildID,
+			//				Ramp:          nil,
+			//			},
+			//			Force: false,
+			//		}},
+			//	}); err != nil {
+			//		return fmt.Errorf("unable to update versioning rules: %w", err)
+			//	}
+			//}
 		} else if ramp := vcfg.rampPercentage; ramp > 0 {
 			// Apply ramp
 			l.Info("applying ramp", "buildID", p.UpdateVersionConfig.buildID, "percentage", p.UpdateVersionConfig.rampPercentage)
