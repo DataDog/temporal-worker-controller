@@ -12,7 +12,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	temporaliov1alpha1 "github.com/DataDog/temporal-worker-controller/api/v1alpha1"
 )
@@ -143,17 +143,21 @@ func TestGeneratePlan(t *testing.T) {
 		},
 	}
 
-	c, err := client.New(nil, client.Options{
-		HTTPClient:     nil,
-		Scheme:         nil,
-		Mapper:         nil,
-		Cache:          nil,
-		WarningHandler: client.WarningHandlerOptions{},
-		DryRun:         nil,
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	//env := envtest.Environment{}
+
+	c := fake.NewFakeClient()
+
+	//c, err := client.New(nil, client.Options{
+	//	HTTPClient:     env.Config,
+	//	Scheme:         nil,
+	//	Mapper:         nil,
+	//	Cache:          nil,
+	//	WarningHandler: client.WarningHandlerOptions{},
+	//	DryRun:         nil,
+	//})
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
 
 	r := &TemporalWorkerReconciler{
 		Client: c,
