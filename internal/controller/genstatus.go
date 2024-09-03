@@ -108,9 +108,9 @@ func (c *versionedDeploymentCollection) addReachability(buildID string, info *ta
 		reachability = temporaliov1alpha1.ReachabilityStatusClosedOnly
 	case enums.BUILD_ID_TASK_REACHABILITY_UNREACHABLE:
 		reachability = temporaliov1alpha1.ReachabilityStatusUnreachable
-	case enums.BUILD_ID_TASK_REACHABILITY_UNSPECIFIED:
-		// TODO(jlegrone): Check why this is happening
-		reachability = temporaliov1alpha1.ReachabilityStatusReachable
+	//case enums.BUILD_ID_TASK_REACHABILITY_UNSPECIFIED:
+	//	// TODO(jlegrone): Check why this is happening
+	//	reachability = temporaliov1alpha1.ReachabilityStatusReachable
 	default:
 		return fmt.Errorf("unhandled build id reachability: %s", info.GetTaskReachability().String())
 	}
@@ -217,8 +217,13 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, l logr.Lo
 			Name: workerDeploy.Spec.WorkerOptions.TaskQueue,
 			//Kind: 0, // defaults to "normal"
 		},
+		Versions: &taskqueue.TaskQueueVersionSelection{
+			BuildIds:  deployedBuildIDs,
+			AllActive: true,
+		},
 		ReportStats:            true,
 		ReportTaskReachability: true,
+		ReportPollers:          true,
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("unable to describe task queue: %w", err)
