@@ -8,6 +8,7 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
@@ -50,7 +51,7 @@ type TemporalWorkerSpec struct {
 	ProgressDeadlineSeconds *int32 `json:"progressDeadlineSeconds,omitempty" protobuf:"varint,9,opt,name=progressDeadlineSeconds"`
 
 	// TODO(jlegrone): configure new version rollout strategies (progressive, blue/green, manual)
-	//RolloutStrategy any
+	RolloutStrategy *RolloutStrategy `json:"rolloutStrategy"`
 
 	// TODO(jlegrone): add godoc
 	WorkerOptions WorkerOptions `json:"workerOptions"`
@@ -133,6 +134,37 @@ type VersionedDeployment struct {
 	// A pointer to the version set's managed deployment.
 	Deployment *v1.ObjectReference `json:"deployment"`
 }
+
+// RolloutStrategy defines strategy to apply during next rollout
+type RolloutStrategy struct {
+	// +optional
+	BlueGreen *BlueGreenRolloutStrategy `json:"blueGreen,omitempty"`
+	// +optional
+	Progressive *ProgressiveRolloutStrategy `json:"progressive,omitempty"`
+	// +optional
+	Manual *ManualRolloutStrategy `json:"manual,omitempty"`
+}
+
+type BlueGreenRolloutStrategy struct{}
+
+type ProgressiveRolloutStrategy struct {
+	// Steps define the order of phases to execute the canary deployment
+	// +optional
+	Steps []RolloutStep `json:"steps,omitempty" protobuf:"bytes,3,rep,name=steps"`
+}
+
+type RolloutStep struct {
+	// RampPercentage indicates what percentage of new workflow executions should be
+	// routed to the new worker version while this step is active.
+	//
+	// Acceptable range is [0,100].
+	RampPercentage *uint8 `json:"rampPercentage"`
+
+	// PauseDuration indicates how long to pause before progressing to the next step.
+	PauseDuration intstr.IntOrString `json:"pauseDuration"`
+}
+
+type ManualRolloutStrategy struct{}
 
 type QueueStatistics struct {
 	// The approximate number of tasks backlogged in this task queue. May count expired tasks but eventually converges
