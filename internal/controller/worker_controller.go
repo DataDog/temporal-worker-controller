@@ -81,7 +81,7 @@ func (r *TemporalWorkerReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	// Generate a plan to get to desired spec from current status
-	plan, err := r.generatePlan(ctx, &workerDeploy.TypeMeta, &workerDeploy.ObjectMeta, &workerDeploy.Spec, status)
+	plan, err := r.generatePlan(ctx, &workerDeploy)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
