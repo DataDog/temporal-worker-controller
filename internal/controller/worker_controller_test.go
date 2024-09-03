@@ -60,7 +60,7 @@ func newTestDeployment(podSpec v1.PodTemplateSpec, desiredReplicas int32) *appsv
 
 func newTestVersionedDeployment(reachabilityStatus temporaliov1alpha1.ReachabilityStatus, deploymentName string) *temporaliov1alpha1.VersionedDeployment {
 	result := temporaliov1alpha1.VersionedDeployment{
-		Healthy:            false,
+		HealthySince:       nil,
 		BuildID:            "test-id",
 		CompatibleBuildIDs: nil,
 		Reachability:       reachabilityStatus,

@@ -109,7 +109,7 @@ type TemporalWorkerStatus struct {
 
 type VersionedDeployment struct {
 	// Healthy indicates whether the deployment is healthy.
-	Healthy bool `json:"healthy"`
+	HealthySince *metav1.Time `json:"healthy"`
 
 	// The build ID associated with the deployment.
 	BuildID string `json:"buildID"`

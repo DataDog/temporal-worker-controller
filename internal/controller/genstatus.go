@@ -14,6 +14,7 @@ import (
 	"go.temporal.io/api/workflowservice/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -42,7 +43,7 @@ func (c *versionedDeploymentCollection) getDeployment(buildID string) (*appsv1.D
 
 func (c *versionedDeploymentCollection) getVersionedDeployment(buildID string) *temporaliov1alpha1.VersionedDeployment {
 	result := temporaliov1alpha1.VersionedDeployment{
-		Healthy:            false,
+		HealthySince:       nil,
 		BuildID:            buildID,
 		CompatibleBuildIDs: nil,
 		Reachability:       "",
@@ -53,14 +54,15 @@ func (c *versionedDeploymentCollection) getVersionedDeployment(buildID string) *
 	// Set deployment ref and health status
 	if d, ok := c.getDeployment(buildID); ok {
 		// Check if deployment condition is "available"
-		var healthy bool
+		var healthySince *metav1.Time
 		// TODO(jlegrone): do we need to sort conditions by timestamp to check only latest?
 		for _, c := range d.Status.Conditions {
 			if c.Type == appsv1.DeploymentAvailable && c.Status == v1.ConditionTrue {
-				healthy = true
+				healthySince = &c.LastTransitionTime
+				break
 			}
 		}
-		result.Healthy = healthy
+		result.HealthySince = healthySince
 		result.Deployment = newObjectRef(d)
 	}
 

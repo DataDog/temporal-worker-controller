@@ -7,6 +7,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
@@ -147,7 +148,7 @@ func getVersionConfig(strategy *temporaliov1alpha1.RolloutStrategy, status *temp
 		return nil
 	}
 	// Do nothing if target version's deployment is not healthy yet
-	if status.TargetVersion.Healthy {
+	if status.TargetVersion.HealthySince == nil {
 		return nil
 	}
 
@@ -161,13 +162,33 @@ func getVersionConfig(strategy *temporaliov1alpha1.RolloutStrategy, status *temp
 
 	// Determine the correct percentage ramp
 	if prog := strategy.Progressive; prog != nil {
-		// TODO(jlegrone): break if wait duration not elapsed
-		var currentRamp uint8
+		var (
+			healthyDuration    = time.Now().Sub(status.TargetVersion.HealthySince.Time)
+			currentRamp        uint8
+			totalPauseDuration time.Duration
+		)
 		for _, s := range prog.Steps {
 			if s.RampPercentage != nil {
 				currentRamp = *s.RampPercentage
 			}
+			// TODO(jlegrone): Correctly parse pause durations
+			pauseDuration, err := time.ParseDuration(s.PauseDuration.String())
+			if err != nil {
+				continue
+			}
+			totalPauseDuration += pauseDuration
+			if totalPauseDuration < healthyDuration {
+				break
+			}
 		}
+		// We've progressed through all steps; it should now be safe to update the default version
+		if totalPauseDuration > healthyDuration {
+			return &versionConfig{
+				buildID:    status.TargetVersion.BuildID,
+				setDefault: true,
+			}
+		}
+		// We haven't finished waiting for all steps; use the latest ramp value
 		return &versionConfig{
 			buildID:        status.TargetVersion.BuildID,
 			rampPercentage: currentRamp,
