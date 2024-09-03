@@ -49,26 +49,23 @@ type versionConfig struct {
 
 func (r *TemporalWorkerReconciler) generatePlan(
 	ctx context.Context,
-	typeMeta *metav1.TypeMeta,
-	objectMeta *metav1.ObjectMeta,
-	desiredState *temporaliov1alpha1.TemporalWorkerSpec,
-	observedState *temporaliov1alpha1.TemporalWorkerStatus,
+	w *temporaliov1alpha1.TemporalWorker,
 ) (*plan, error) {
 	plan := plan{
-		TemporalNamespace: desiredState.WorkerOptions.TemporalNamespace,
-		TaskQueue:         desiredState.WorkerOptions.TaskQueue,
+		TemporalNamespace: w.Spec.WorkerOptions.TemporalNamespace,
+		TaskQueue:         w.Spec.WorkerOptions.TaskQueue,
 		ScaleDeployments:  make(map[*v1.ObjectReference]uint32),
 	}
 
 	// Scale the active deployment if it doesn't match desired replicas
-	if observedState.DefaultVersion != nil && observedState.DefaultVersion.Deployment != nil {
-		defaultDeployment := observedState.DefaultVersion.Deployment
+	if w.Status.DefaultVersion != nil && w.Status.DefaultVersion.Deployment != nil {
+		defaultDeployment := w.Status.DefaultVersion.Deployment
 		d, err := r.getDeployment(ctx, defaultDeployment)
 		if err != nil {
 			return nil, err
 		}
-		if d.Spec.Replicas != nil && *d.Spec.Replicas != *desiredState.Replicas {
-			plan.ScaleDeployments[defaultDeployment] = uint32(*desiredState.Replicas)
+		if d.Spec.Replicas != nil && *d.Spec.Replicas != *w.Spec.Replicas {
+			plan.ScaleDeployments[defaultDeployment] = uint32(*w.Spec.Replicas)
 		}
 	}
 
@@ -76,7 +73,7 @@ func (r *TemporalWorkerReconciler) generatePlan(
 	//                 but have no corresponding Deployment.
 
 	// Scale or delete deployments based on reachability
-	for _, versionSet := range observedState.DeprecatedVersions {
+	for _, versionSet := range w.Status.DeprecatedVersions {
 		if versionSet.Deployment == nil {
 			// There's nothing we can do if the deployment was already deleted out of band.
 			continue
@@ -108,12 +105,12 @@ func (r *TemporalWorkerReconciler) generatePlan(
 		}
 	}
 
-	desiredBuildID := computeBuildID(desiredState)
+	desiredBuildID := computeBuildID(&w.Spec)
 
-	if targetVersion := observedState.TargetVersion; targetVersion != nil {
+	if targetVersion := w.Status.TargetVersion; targetVersion != nil {
 		if targetVersion.Deployment == nil {
 			// Create new deployment from current pod template when it doesn't exist
-			d, err := r.newDeployment(typeMeta, objectMeta, desiredState, desiredBuildID)
+			d, err := r.newDeployment(w, desiredBuildID)
 			if err != nil {
 				return nil, err
 			}
@@ -121,7 +118,8 @@ func (r *TemporalWorkerReconciler) generatePlan(
 			if existing == nil {
 				plan.CreateDeployment = d
 			} else {
-				plan.ScaleDeployments[newObjectRef(existing)] = uint32(*desiredState.Replicas)
+				// TODO(jlegrone): check for nil pointer
+				plan.ScaleDeployments[newObjectRef(existing)] = uint32(*w.Spec.Replicas)
 			}
 		} else if targetVersion.BuildID != desiredBuildID {
 			// Delete the latest (unregistered) deployment if the desired build ID has changed
@@ -132,9 +130,9 @@ func (r *TemporalWorkerReconciler) generatePlan(
 			plan.DeleteDeployments = append(plan.DeleteDeployments, d)
 		} else {
 			// Update version configuration
-			plan.UpdateVersionConfig = getVersionConfig(desiredState.RolloutStrategy, observedState)
+			plan.UpdateVersionConfig = getVersionConfig(w.Spec.RolloutStrategy, &w.Status)
 			if plan.UpdateVersionConfig != nil {
-				plan.UpdateVersionConfig.conflictToken = observedState.VersionConflictToken
+				plan.UpdateVersionConfig.conflictToken = w.Status.VersionConflictToken
 			}
 		}
 	}
@@ -210,13 +208,11 @@ func (r *TemporalWorkerReconciler) getDeployment(ctx context.Context, ref *v1.Ob
 }
 
 func (r *TemporalWorkerReconciler) newDeployment(
-	typeMeta *metav1.TypeMeta,
-	objectMeta *metav1.ObjectMeta,
-	spec *temporaliov1alpha1.TemporalWorkerSpec,
+	w *temporaliov1alpha1.TemporalWorker,
 	buildID string,
 ) (*appsv1.Deployment, error) {
-	d := newDeploymentWithoutOwnerRef(typeMeta, objectMeta, spec, buildID)
-	if err := ctrl.SetControllerReference(objectMeta, d, r.Scheme); err != nil {
+	d := newDeploymentWithoutOwnerRef(&w.TypeMeta, &w.ObjectMeta, &w.Spec, buildID)
+	if err := ctrl.SetControllerReference(w, d, r.Scheme); err != nil {
 		return nil, err
 	}
 	return d, nil

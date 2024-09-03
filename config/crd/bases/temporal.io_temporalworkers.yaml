@@ -3358,7 +3358,7 @@ spec:
                         type: string
                     type: object
                     x-kubernetes-map-type: atomic
-                  healthy:
+                  healthySince:
                     format: date-time
                     type: string
                   rampPercentage:
@@ -3382,8 +3382,6 @@ spec:
                     type: object
                 required:
                 - buildID
-                - deployment
-                - healthy
                 - reachability
                 type: object
               deprecatedVersions:
@@ -3413,7 +3411,7 @@ spec:
                           type: string
                       type: object
                       x-kubernetes-map-type: atomic
-                    healthy:
+                    healthySince:
                       format: date-time
                       type: string
                     rampPercentage:
@@ -3437,8 +3435,6 @@ spec:
                       type: object
                   required:
                   - buildID
-                  - deployment
-                  - healthy
                   - reachability
                   type: object
                 type: array
@@ -3468,7 +3464,7 @@ spec:
                         type: string
                     type: object
                     x-kubernetes-map-type: atomic
-                  healthy:
+                  healthySince:
                     format: date-time
                     type: string
                   rampPercentage:
@@ -3492,8 +3488,6 @@ spec:
                     type: object
                 required:
                 - buildID
-                - deployment
-                - healthy
                 - reachability
                 type: object
               versionConflictToken:
