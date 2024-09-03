@@ -131,7 +131,7 @@ func newVersionedDeploymentCollection() versionedDeploymentCollection {
 	}
 }
 
-func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.Request, workerDeploy *temporaliov1alpha1.TemporalWorker) (*temporaliov1alpha1.TemporalWorkerStatus, error) {
+func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.Request, workerDeploy *temporaliov1alpha1.TemporalWorker) (*temporaliov1alpha1.TemporalWorkerStatus, *workflowservice.GetWorkerVersioningRulesResponse, error) {
 	var (
 		desiredBuildID, defaultBuildID string
 		deployedBuildIDs               []string
@@ -143,7 +143,7 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 	// Get managed worker deployments
 	var childDeploys appsv1.DeploymentList
 	if err := r.List(ctx, &childDeploys, client.InNamespace(req.Namespace), client.MatchingFields{deployOwnerKey: req.Name}); err != nil {
-		return nil, fmt.Errorf("unable to list child deployments: %w", err)
+		return nil, nil, fmt.Errorf("unable to list child deployments: %w", err)
 	}
 	// Sort deployments by creation timestamp
 	sort.SliceStable(childDeploys.Items, func(i, j int) bool {
@@ -165,7 +165,7 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 		TaskQueue: workerDeploy.Spec.WorkerOptions.TaskQueue,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("unable to get worker versioning rules: %w", err)
+		return nil, nil, fmt.Errorf("unable to get worker versioning rules: %w", err)
 	}
 	// Register redirect rules
 	for _, rule := range rules.GetCompatibleRedirectRules() {
@@ -205,11 +205,11 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 		},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("unable to describe task queue: %w", err)
+		return nil, nil, fmt.Errorf("unable to describe task queue: %w", err)
 	}
 	for buildID, info := range tq.GetVersionsInfo() {
 		if err := versions.addReachability(buildID, info); err != nil {
-			return nil, fmt.Errorf("error computing reachability for build ID %q: %w", buildID, err)
+			return nil, nil, fmt.Errorf("error computing reachability for build ID %q: %w", buildID, err)
 		}
 	}
 
@@ -227,5 +227,5 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, req ctrl.
 		DefaultVersion:       versions.getVersionedDeployment(defaultBuildID),
 		DeprecatedVersions:   deprecatedVersions,
 		VersionConflictToken: rules.GetConflictToken(),
-	}, nil
+	}, rules, nil
 }

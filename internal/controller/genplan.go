@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"time"
 
+	"go.temporal.io/api/workflowservice/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -50,6 +51,7 @@ type versionConfig struct {
 func (r *TemporalWorkerReconciler) generatePlan(
 	ctx context.Context,
 	w *temporaliov1alpha1.TemporalWorker,
+	rules *workflowservice.GetWorkerVersioningRulesResponse,
 ) (*plan, error) {
 	plan := plan{
 		TemporalNamespace: w.Spec.WorkerOptions.TemporalNamespace,
@@ -130,7 +132,7 @@ func (r *TemporalWorkerReconciler) generatePlan(
 			plan.DeleteDeployments = append(plan.DeleteDeployments, d)
 		} else {
 			// Update version configuration
-			plan.UpdateVersionConfig = getVersionConfig(w.Spec.RolloutStrategy, &w.Status)
+			plan.UpdateVersionConfig = getVersionConfigDiff(rules, w.Spec.RolloutStrategy, &w.Status)
 			if plan.UpdateVersionConfig != nil {
 				plan.UpdateVersionConfig.conflictToken = w.Status.VersionConflictToken
 			}
@@ -140,7 +142,32 @@ func (r *TemporalWorkerReconciler) generatePlan(
 	return &plan, nil
 }
 
-func getVersionConfig(rules any, strategy *temporaliov1alpha1.RolloutStrategy, status *temporaliov1alpha1.TemporalWorkerStatus) *versionConfig {
+func getVersionConfigDiff(rules *workflowservice.GetWorkerVersioningRulesResponse, strategy *temporaliov1alpha1.RolloutStrategy, status *temporaliov1alpha1.TemporalWorkerStatus) *versionConfig {
+	resp := getVersionConfig(strategy, status)
+	if resp == nil {
+		return nil
+	}
+	resp.buildID = status.TargetVersion.BuildID
+
+	if assignmentRules := rules.GetAssignmentRules(); len(assignmentRules) > 0 {
+		first := assignmentRules[0].GetRule()
+		if first.GetTargetBuildId() == resp.buildID {
+			ramp := first.GetPercentageRamp()
+			// Skip making changes if build id is already the default
+			if ramp == nil && resp.setDefault {
+				return nil
+			}
+			// Skip making changes if ramp is already set to the desired value
+			if ramp != nil && ramp.GetRampPercentage() == float32(resp.rampPercentage) {
+				return nil
+			}
+		}
+	}
+
+	return resp
+}
+
+func getVersionConfig(strategy *temporaliov1alpha1.RolloutStrategy, status *temporaliov1alpha1.TemporalWorkerStatus) *versionConfig {
 	// Do nothing if rollout strategy is unset or manual
 	if strategy == nil || strategy.Manual != nil {
 		return nil
@@ -157,7 +184,6 @@ func getVersionConfig(rules any, strategy *temporaliov1alpha1.RolloutStrategy, s
 	// Set new default version in blue/green rollout mode as soon as next version is healthy
 	if strategy.BlueGreen != nil {
 		return &versionConfig{
-			buildID:    status.TargetVersion.BuildID,
 			setDefault: true,
 		}
 	}
@@ -186,13 +212,11 @@ func getVersionConfig(rules any, strategy *temporaliov1alpha1.RolloutStrategy, s
 		// We've progressed through all steps; it should now be safe to update the default version
 		if totalPauseDuration > healthyDuration {
 			return &versionConfig{
-				buildID:    status.TargetVersion.BuildID,
 				setDefault: true,
 			}
 		}
 		// We haven't finished waiting for all steps; use the latest ramp value
 		return &versionConfig{
-			buildID:        status.TargetVersion.BuildID,
 			rampPercentage: currentRamp,
 		}
 	}

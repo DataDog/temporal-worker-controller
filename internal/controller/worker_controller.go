@@ -62,7 +62,7 @@ func (r *TemporalWorkerReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	// Compute a new status from k8s and temporal state
-	status, err := r.generateStatus(ctx, req, &workerDeploy)
+	status, rules, err := r.generateStatus(ctx, req, &workerDeploy)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -81,7 +81,7 @@ func (r *TemporalWorkerReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	// Generate a plan to get to desired spec from current status
-	plan, err := r.generatePlan(ctx, &workerDeploy)
+	plan, err := r.generatePlan(ctx, &workerDeploy, rules)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
