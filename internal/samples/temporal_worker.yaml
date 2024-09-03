@@ -31,3 +31,5 @@ spec:
   workerOptions:
     temporalNamespace: "default"
     taskQueue: "hello_world"
+  rolloutStrategy:
+    manual: {}
