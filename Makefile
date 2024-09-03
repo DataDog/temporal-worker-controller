@@ -70,7 +70,8 @@ list-workflow-build-ids: ## List workflow executions and their build IDs.
 
 .PHONY: build-sample-worker
 build-sample-worker: ## Build the sample worker container image.
-	eval $(minikube docker-env) && $(CONTAINER_TOOL) build --load -t worker-controller/sample-worker:latest -f sample-worker.dockerfile .
+	#eval $(minikube -p minikube docker-env) && $(CONTAINER_TOOL) build --load -t worker-controller/sample-worker:latest -f sample-worker.dockerfile .
+	minikube image build -t worker-controller/sample-worker:latest -f sample-worker.dockerfile . && minikube image load --overwrite=true --daemon=true worker-controller/sample-worker:latest
 
 .PHONY: deploy-sample-worker
 deploy-sample-worker: build-sample-worker ## Deploy the sample worker to the cluster.
