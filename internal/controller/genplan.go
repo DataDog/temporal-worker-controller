@@ -145,6 +145,7 @@ func (r *TemporalWorkerReconciler) generatePlan(
 				}
 
 				// Update version configuration
+				// TODO(jlegrone): What to do about ramp values for existing versions? Right now they are not removed.
 				plan.UpdateVersionConfig = getVersionConfigDiff(rules, w.Spec.RolloutStrategy, &w.Status)
 				if plan.UpdateVersionConfig != nil {
 					plan.UpdateVersionConfig.conflictToken = w.Status.VersionConflictToken

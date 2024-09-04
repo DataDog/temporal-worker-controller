@@ -29,6 +29,7 @@ queue version sets when workers are updated.
 - [x] Registration of new task queue version sets
 - [x] Creation of versioned worker deployment resources
 - [x] Deletion of unreachable worker deployments
+- [x] Manual, Blue/Green, and Progressive rollouts of new worker versions
 - [ ] Autoscaling of worker deployments
 - [ ] Automated merging of compatible version sets
 - [ ] Optional cancellation after timeout for workflows on old version sets
