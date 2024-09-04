@@ -59,7 +59,7 @@ start-sample-workflow: ## Start a sample workflow.
 
 .PHONY: apply-load-sample-workflow
 apply-load-sample-workflow: ## Start a sample workflow every 15 seconds
-	watch --interval 15 -- $(TEMPORAL) workflow start --type "hello_world" --task-queue "hello_world"
+	watch --interval 0.2 -- $(TEMPORAL) workflow start --type "hello_world" --task-queue "hello_world"
 
 .PHONY: list-workflow-build-ids
 list-workflow-build-ids: ## List workflow executions and their build IDs.

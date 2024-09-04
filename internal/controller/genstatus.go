@@ -118,8 +118,8 @@ func (c *versionedDeploymentCollection) addReachability(buildID string, info *ta
 
 	// Compute total stats
 	var totalStats temporaliov1alpha1.QueueStatistics
-	for i, stat := range info.GetTypesInfo() {
-		fmt.Println("total stats for build id:", buildID, i, stat.GetPollers(), stat.GetStats().GetApproximateBacklogAge(), stat.GetStats().String())
+	for _, stat := range info.GetTypesInfo() {
+		//fmt.Println("total stats for build id:", buildID, i, stat.GetPollers(), stat.GetStats().GetApproximateBacklogAge(), stat.GetStats().String())
 
 		// TODO(jlegrone): Compute max backlog age
 		//if backlogAge := stat.GetStats().GetApproximateBacklogAge(); backlogAge.AsDuration() > totalStats.ApproximateBacklogAge.AsDuration() {
@@ -226,13 +226,13 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, l logr.Lo
 		},
 		ReportStats:            true,
 		ReportTaskReachability: true,
-		ReportPollers:          true,
+		ReportPollers:          false,
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("unable to describe task queue: %w", err)
 	}
 	for buildID, info := range tq.GetVersionsInfo() {
-		l.Info("Got build id info", "buildID", buildID, "info", info.GetTaskReachability().String())
+		//l.Info("Got build id info", "buildID", buildID, "info", info.GetTaskReachability().String(), "stats", info.GetTypesInfo()[0].GetStats())
 		if err := versions.addReachability(buildID, info); err != nil {
 			return nil, nil, fmt.Errorf("error computing reachability for build ID %q: %w", buildID, err)
 		}

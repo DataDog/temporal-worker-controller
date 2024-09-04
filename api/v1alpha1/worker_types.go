@@ -163,7 +163,7 @@ type RolloutStep struct {
 
 	// PauseDuration indicates how long to pause before progressing to the next step.
 	// TODO(jlegrone): Use a different type for duration?
-	PauseDuration intstr.IntOrString `json:"pauseDuration"`
+	PauseDuration metav1.Duration `json:"pauseDuration"`
 }
 
 type ManualRolloutStrategy struct{}
