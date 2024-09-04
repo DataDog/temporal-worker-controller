@@ -159,8 +159,7 @@ func (r *TemporalWorkerReconciler) generatePlan(
 func getOldestBuildIDCreateTime(rules *workflowservice.GetWorkerVersioningRulesResponse, buildID string) *timestamppb.Timestamp {
 	var rule *taskqueue.TimestampedBuildIdAssignmentRule
 	for _, r := range rules.GetAssignmentRules() {
-		fmt.Println("ASSIGNMENT RULE", rule.GetRule().GetTargetBuildId(), rule.GetCreateTime())
-		if rule.GetRule().GetTargetBuildId() != buildID {
+		if r.GetRule().GetTargetBuildId() != buildID {
 			break
 		}
 		rule = r
@@ -176,7 +175,7 @@ func getVersionConfigDiff(rules *workflowservice.GetWorkerVersioningRulesRespons
 	}
 	vcfg.buildID = status.TargetVersion.BuildID
 
-	fmt.Println("CONFIG", vcfg, oldestBuildIDCreateTime)
+	fmt.Println("CONFIG", vcfg.setDefault, vcfg.rampPercentage, oldestBuildIDCreateTime.AsTime())
 
 	if assignmentRules := rules.GetAssignmentRules(); len(assignmentRules) > 0 {
 		first := assignmentRules[0].GetRule()
@@ -221,7 +220,6 @@ func getVersionConfig(strategy *temporaliov1alpha1.RolloutStrategy, status *temp
 			totalPauseDuration = healthyDuration
 		)
 		if rampCreateTime != nil {
-			fmt.Println("RAMP CREATE TIME", rampCreateTime.AsTime())
 			healthyDuration = time.Since(rampCreateTime.AsTime())
 		}
 		for _, s := range prog.Steps {
@@ -235,7 +233,7 @@ func getVersionConfig(strategy *temporaliov1alpha1.RolloutStrategy, status *temp
 			}
 		}
 		// We've progressed through all steps; it should now be safe to update the default version
-		if healthyDuration > 0 && totalPauseDuration > healthyDuration {
+		if healthyDuration > 0 && healthyDuration > totalPauseDuration {
 			return &versionConfig{
 				setDefault: true,
 			}
