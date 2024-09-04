@@ -105,7 +105,7 @@ func (r *TemporalWorkerReconciler) executePlan(ctx context.Context, l logr.Logge
 			_, err := r.WorkflowServiceClient.UpdateWorkerVersioningRules(ctx, &workflowservice.UpdateWorkerVersioningRulesRequest{
 				Namespace:     p.TemporalNamespace,
 				TaskQueue:     p.TaskQueue,
-				ConflictToken: nil,
+				ConflictToken: vcfg.conflictToken,
 				Operation: &workflowservice.UpdateWorkerVersioningRulesRequest_InsertAssignmentRule{InsertAssignmentRule: &workflowservice.UpdateWorkerVersioningRulesRequest_InsertBuildIdAssignmentRule{
 					RuleIndex: 0,
 					Rule: &taskqueue.BuildIdAssignmentRule{
