@@ -108,9 +108,6 @@ func (c *versionedDeploymentCollection) addReachability(buildID string, info *ta
 		reachability = temporaliov1alpha1.ReachabilityStatusClosedOnly
 	case enums.BUILD_ID_TASK_REACHABILITY_UNREACHABLE:
 		reachability = temporaliov1alpha1.ReachabilityStatusUnreachable
-	//case enums.BUILD_ID_TASK_REACHABILITY_UNSPECIFIED:
-	//	// TODO(jlegrone): Check why this is happening
-	//	reachability = temporaliov1alpha1.ReachabilityStatusReachable
 	default:
 		return fmt.Errorf("unhandled build id reachability: %s", info.GetTaskReachability().String())
 	}
@@ -119,12 +116,9 @@ func (c *versionedDeploymentCollection) addReachability(buildID string, info *ta
 	// Compute total stats
 	var totalStats temporaliov1alpha1.QueueStatistics
 	for _, stat := range info.GetTypesInfo() {
-		//fmt.Println("total stats for build id:", buildID, i, stat.GetPollers(), stat.GetStats().GetApproximateBacklogAge(), stat.GetStats().String())
-
-		// TODO(jlegrone): Compute max backlog age
-		//if backlogAge := stat.GetStats().GetApproximateBacklogAge(); backlogAge.AsDuration() > totalStats.ApproximateBacklogAge.AsDuration() {
-		//	totalStats.ApproximateBacklogAge = backlogAge
-		//}
+		if backlogAge := stat.GetStats().GetApproximateBacklogAge().AsDuration(); backlogAge > totalStats.ApproximateBacklogAge.Duration {
+			totalStats.ApproximateBacklogAge = metav1.Duration{Duration: backlogAge}
+		}
 		totalStats.ApproximateBacklogCount += stat.GetStats().GetApproximateBacklogCount()
 		totalStats.TasksAddRate += stat.GetStats().GetTasksAddRate()
 		totalStats.TasksDispatchRate += stat.GetStats().GetTasksDispatchRate()

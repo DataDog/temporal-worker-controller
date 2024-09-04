@@ -201,15 +201,10 @@ func getVersionConfig(strategy *temporaliov1alpha1.RolloutStrategy, status *temp
 			totalPauseDuration time.Duration
 		)
 		for _, s := range prog.Steps {
-			if s.RampPercentage != nil {
-				currentRamp = *s.RampPercentage
+			if s.RampPercentage != 0 {
+				currentRamp = s.RampPercentage
 			}
-			// TODO(jlegrone): Correctly parse pause durations
-			pauseDuration, err := time.ParseDuration(s.PauseDuration.String())
-			if err != nil {
-				continue
-			}
-			totalPauseDuration += pauseDuration
+			totalPauseDuration += s.PauseDuration.Duration
 			if totalPauseDuration < healthyDuration {
 				break
 			}

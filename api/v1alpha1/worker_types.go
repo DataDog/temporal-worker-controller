@@ -7,7 +7,6 @@ package v1alpha1
 import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
@@ -159,10 +158,9 @@ type RolloutStep struct {
 	// routed to the new worker version while this step is active.
 	//
 	// Acceptable range is [0,100].
-	RampPercentage *uint8 `json:"rampPercentage"`
+	RampPercentage uint8 `json:"rampPercentage"`
 
 	// PauseDuration indicates how long to pause before progressing to the next step.
-	// TODO(jlegrone): Use a different type for duration?
 	PauseDuration metav1.Duration `json:"pauseDuration"`
 }
 
@@ -173,8 +171,7 @@ type QueueStatistics struct {
 	// to the right value.
 	ApproximateBacklogCount int64 `json:"approximateBacklogCount,omitempty"`
 	// Approximate age of the oldest task in the backlog based on the creation timestamp of the task at the head of the queue.
-	// TODO(jlegrone): Use a different type for duration?
-	ApproximateBacklogAge *intstr.IntOrString `json:"approximateBacklogAge,omitempty"`
+	ApproximateBacklogAge metav1.Duration `json:"approximateBacklogAge,omitempty"`
 	// Approximate tasks per second added to the task queue based on activity within a fixed window. This includes both backlogged and
 	// sync-matched tasks.
 	TasksAddRate float32 `json:"tasksAddRate,omitempty"`

@@ -47,10 +47,7 @@ spec:
                         items:
                           properties:
                             pauseDuration:
-                              anyOf:
-                              - type: integer
-                              - type: string
-                              x-kubernetes-int-or-string: true
+                              type: string
                             rampPercentage:
                               type: integer
                           required:
@@ -3368,10 +3365,7 @@ spec:
                   statistics:
                     properties:
                       approximateBacklogAge:
-                        anyOf:
-                        - type: integer
-                        - type: string
-                        x-kubernetes-int-or-string: true
+                        type: string
                       approximateBacklogCount:
                         format: int64
                         type: integer
@@ -3421,10 +3415,7 @@ spec:
                     statistics:
                       properties:
                         approximateBacklogAge:
-                          anyOf:
-                          - type: integer
-                          - type: string
-                          x-kubernetes-int-or-string: true
+                          type: string
                         approximateBacklogCount:
                           format: int64
                           type: integer
@@ -3474,10 +3465,7 @@ spec:
                   statistics:
                     properties:
                       approximateBacklogAge:
-                        anyOf:
-                        - type: integer
-                        - type: string
-                        x-kubernetes-int-or-string: true
+                        type: string
                       approximateBacklogCount:
                         format: int64
                         type: integer
