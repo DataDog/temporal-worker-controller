@@ -168,14 +168,11 @@ func getOldestBuildIDCreateTime(rules *workflowservice.GetWorkerVersioningRulesR
 }
 
 func getVersionConfigDiff(rules *workflowservice.GetWorkerVersioningRulesResponse, strategy *temporaliov1alpha1.RolloutStrategy, status *temporaliov1alpha1.TemporalWorkerStatus) *versionConfig {
-	oldestBuildIDCreateTime := getOldestBuildIDCreateTime(rules, status.TargetVersion.BuildID)
-	vcfg := getVersionConfig(strategy, status, oldestBuildIDCreateTime)
+	vcfg := getVersionConfig(strategy, status, getOldestBuildIDCreateTime(rules, status.TargetVersion.BuildID))
 	if vcfg == nil {
 		return nil
 	}
 	vcfg.buildID = status.TargetVersion.BuildID
-
-	fmt.Println("CONFIG", vcfg.setDefault, vcfg.rampPercentage, oldestBuildIDCreateTime.AsTime())
 
 	if assignmentRules := rules.GetAssignmentRules(); len(assignmentRules) > 0 {
 		first := assignmentRules[0].GetRule()
@@ -227,7 +224,6 @@ func getVersionConfig(strategy *temporaliov1alpha1.RolloutStrategy, status *temp
 				currentRamp = s.RampPercentage
 			}
 			totalPauseDuration += s.PauseDuration.Duration
-			fmt.Println("STEP_RAMP", currentRamp, "TOTAL_PAUSE_DURATION", totalPauseDuration, "HEALTHY_DURATION", healthyDuration)
 			if healthyDuration < totalPauseDuration {
 				break
 			}

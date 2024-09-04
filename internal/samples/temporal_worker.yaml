@@ -21,8 +21,8 @@ spec:
           imagePullPolicy: Never
           args:
             - --workflow-version
-            - v1
-#            - v2 # incompatible with v1
+#            - v1
+            - v2 # incompatible with v1
 #            - v3 # incompatible with v1 and v2
 #            - v4 # this will fail to roll out
           env:
