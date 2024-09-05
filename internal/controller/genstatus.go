@@ -226,7 +226,7 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, l logr.Lo
 		return nil, nil, fmt.Errorf("unable to describe task queue: %w", err)
 	}
 	for buildID, info := range tq.GetVersionsInfo() {
-		//l.Info("Got build id info", "buildID", buildID, "info", info.GetTaskReachability().String(), "stats", info.GetTypesInfo()[0].GetStats())
+		l.Info("Got build id info", "buildID", buildID, "info", info.GetTaskReachability().String(), "stats", info.GetTypesInfo()[0].GetStats())
 		if err := versions.addReachability(buildID, info); err != nil {
 			return nil, nil, fmt.Errorf("error computing reachability for build ID %q: %w", buildID, err)
 		}

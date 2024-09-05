@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/created-by: worker-controller
   name: sample
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app.kubernetes.io/name: sample
@@ -32,13 +32,17 @@ spec:
     temporalNamespace: "default"
     taskQueue: "hello_world"
   rolloutStrategy:
-#    manual: {}
+    manual: {}
 #    blueGreen: {}
-    progressive:
-      steps:
-        - rampPercentage: 1
-          pauseDuration: 30s
-        - rampPercentage: 10
-          pauseDuration: 30s
-        - rampPercentage: 50
-          pauseDuration: 1m
+    # other names:
+    # - rolling
+    # - rainbow
+    # - canary
+#    progressive:
+#      steps:
+#        - rampPercentage: 1
+#          pauseDuration: 30s
+#        - rampPercentage: 10
+#          pauseDuration: 30s
+#        - rampPercentage: 50
+#          pauseDuration: 1m

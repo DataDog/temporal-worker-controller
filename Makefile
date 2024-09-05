@@ -87,6 +87,8 @@ start-temporal-server: ## Start an ephemeral Temporal server with versioning API
 #		--dynamic-config-value worker.removableBuildIdDurationSinceDefault=0.001 \
 #		--dynamic-config-value frontend.reachabilityQuerySetDurationSinceDefault=0.001 \
 
+# Check for reachabilityCacheClosedTTL
+
 .PHONY: fmt
 fmt: ## Run go fmt against code.
 	go fmt ./...
