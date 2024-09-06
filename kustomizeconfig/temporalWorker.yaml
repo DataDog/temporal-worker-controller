@@ -1,3 +1,0 @@
-images:
-  - path: spec/template/spec/container/image
-    kind: TemporalWorker

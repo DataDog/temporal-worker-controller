@@ -1,0 +1,24 @@
+apiVersion: skaffold/v4beta11
+kind: Config
+metadata:
+  name: samples
+build:
+  artifacts:
+    - image: worker
+      context: worker
+      docker:
+        dockerfile: Dockerfile
+deploy:
+  kubeContext: minikube
+  kubectl: {}
+manifests:
+  rawYaml:
+    - temporal_worker.yaml
+#  kustomize:
+#    paths:
+#      - .
+resourceSelector:
+  allow:
+    - groupKind: "TemporalWorker.temporal.io"
+      image: [".*"]
+      labels: [".*"]

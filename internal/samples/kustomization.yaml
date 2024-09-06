@@ -1,9 +1,0 @@
-## Append samples of your project ##
-resources:
-- temporal_worker.yaml
-#+kubebuilder:scaffold:manifestskustomizesamples
-
-images:
-  - name: worker
-    newName: sample-worker
-#    newTag: latest
