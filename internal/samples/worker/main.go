@@ -6,16 +6,15 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"os"
 	"time"
 
 	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/log"
 	"go.temporal.io/sdk/worker"
 	"go.temporal.io/sdk/workflow"
 )
-
-const helloWorldWorkflow = "hello_world"
 
 var (
 	temporalHostPort  = os.Getenv("TEMPORAL_HOST_PORT")
@@ -25,14 +24,22 @@ var (
 )
 
 func main() {
-	log.Println("Worker config is: ", temporalHostPort, temporalNamespace, temporalTaskQueue, workerBuildID)
+	l := log.NewStructuredLogger(slog.Default())
+	l.Info("Worker config",
+		"temporal.hostport", temporalHostPort,
+		"temporal.namespace", temporalNamespace,
+		"temporal.taskqueue", temporalTaskQueue,
+		"worker.buildID", workerBuildID,
+	)
 
 	c, err := client.Dial(client.Options{
 		HostPort:  temporalHostPort,
 		Namespace: temporalNamespace,
+		Logger:    l,
 	})
 	if err != nil {
-		log.Fatal(err)
+		l.Error("Unable to create Temporal client", "error", err)
+		os.Exit(1)
 	}
 
 	w := worker.New(c, temporalTaskQueue, worker.Options{
@@ -41,18 +48,23 @@ func main() {
 	})
 	defer w.Stop()
 
-	w.RegisterWorkflowWithOptions(Hello, workflow.RegisterOptions{Name: helloWorldWorkflow})
+	w.RegisterWorkflowWithOptions(HelloWorldWorkflow, workflow.RegisterOptions{Name: "hello_world"})
 
 	if err := w.Run(worker.InterruptCh()); err != nil {
-		log.Fatal(err)
+		l.Error("Unable to start worker", "error", err)
+		os.Exit(1)
 	}
 }
 
-func Hello(ctx workflow.Context) (string, error) {
-	return hellov1(ctx)
-}
+func HelloWorldWorkflow(ctx workflow.Context) (string, error) {
+	if err := executeLocalActivity(ctx); err != nil {
+		return "", err
+	}
 
-func hellov1(ctx workflow.Context) (string, error) {
+	workflow.SideEffect(ctx, func(ctx workflow.Context) interface{} {
+		return nil
+	})
+
 	if err := workflow.Sleep(ctx, 30*time.Second); err != nil {
 		return "", err
 	}
@@ -60,23 +72,11 @@ func hellov1(ctx workflow.Context) (string, error) {
 	return "Hello World!", nil
 }
 
-func hellov2(ctx workflow.Context) (string, error) {
-	workflow.SideEffect(ctx, func(ctx workflow.Context) interface{} {
-		return nil
-	})
-
-	return hellov1(ctx)
-}
-
-func hellov3(ctx workflow.Context) (string, error) {
-	if err := workflow.ExecuteLocalActivity(
+func executeLocalActivity(ctx workflow.Context) error {
+	return workflow.ExecuteLocalActivity(
 		workflow.WithLocalActivityOptions(ctx, workflow.LocalActivityOptions{
 			ScheduleToCloseTimeout: time.Second,
 		}),
 		func(ctx context.Context) error { return nil },
-	).Get(ctx, nil); err != nil {
-		return "", err
-	}
-
-	return hellov2(ctx)
+	).Get(ctx, nil)
 }
