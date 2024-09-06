@@ -31,9 +31,10 @@ queue version sets when workers are updated.
 - [x] Deletion of unreachable worker deployments
 - [x] Manual, Blue/Green, and Progressive rollouts of new worker versions
 - [ ] Autoscaling of worker deployments
-- [ ] Automated merging of compatible version sets
-- [ ] Optional cancellation after timeout for workflows on old version sets
-- [ ] Passing `ContinueAsNew` signal to workflows on old version sets
+- [ ] Automated rollover to compatible worker versions
+- [ ] Canary analysis of new worker versions
+- [ ] Optional cancellation after timeout for workflows on old versions
+- [ ] Passing `ContinueAsNew` signal to workflows on old versions
 
 ## Usage
 
