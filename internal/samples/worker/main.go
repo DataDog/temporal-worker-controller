@@ -24,10 +24,6 @@ var (
 )
 
 func main() {
-	if true {
-		panic("oh darn")
-	}
-
 	l := log.NewStructuredLogger(slog.Default())
 	l.Info("Worker config",
 		"temporal.hostport", temporalHostPort,

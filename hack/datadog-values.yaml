@@ -1,0 +1,5 @@
+kubelet:
+  tlsVerify: false
+env:
+  - name: DD_KUBELET_TLS_VERIFY
+    value: "false"

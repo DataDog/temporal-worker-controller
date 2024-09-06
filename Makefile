@@ -201,7 +201,7 @@ envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
 $(ENVTEST): $(LOCALBIN)
 	test -s $(LOCALBIN)/setup-envtest || GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
 
-DD_SITE ?= "us1.datadoghq.com"
+DD_SITE ?= datadoghq.com
 
 # Add an entry in secret.env and then run this target via the following command:
 #  source secret.env && make install-datadog-agent DD_API_KEY=$DD_API_KEY
