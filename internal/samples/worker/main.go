@@ -26,10 +26,6 @@ var (
 )
 
 func main() {
-	if true {
-		panic("oh darasdfsdfn")
-	}
-
 	// Read the value of the workflow-version flag.
 	var workflowVersion string
 	flag.StringVar(&workflowVersion, "workflow-version", "", "The workflow version to register with Temporal.")
@@ -55,16 +51,9 @@ func main() {
 	})
 	defer w.Stop()
 
-	switch workflowVersion {
-	case "v1":
-		w.RegisterWorkflowWithOptions(HelloWorldV1, workflow.RegisterOptions{Name: helloWorldWorkflow})
-	case "v2":
-		w.RegisterWorkflowWithOptions(HelloWorldV2, workflow.RegisterOptions{Name: helloWorldWorkflow})
-	case "v3":
-		w.RegisterWorkflowWithOptions(HelloWorldV3, workflow.RegisterOptions{Name: helloWorldWorkflow})
-	default:
-		log.Fatalf("unsupported build ID: %q", workflowVersion)
-	}
+	w.RegisterWorkflowWithOptions(HelloWorldV1, workflow.RegisterOptions{Name: helloWorldWorkflow})
+	//w.RegisterWorkflowWithOptions(HelloWorldV2, workflow.RegisterOptions{Name: helloWorldWorkflow})
+	//w.RegisterWorkflowWithOptions(HelloWorldV3, workflow.RegisterOptions{Name: helloWorldWorkflow})
 
 	if err := w.Run(worker.InterruptCh()); err != nil {
 		log.Fatal(err)

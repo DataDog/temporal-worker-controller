@@ -1,4 +1,4 @@
-module github.com/DataDog/temporal-worker-controller/internal/samples
+module github.com/DataDog/temporal-worker-controller/internal/samples/worker
 
 go 1.22.5
 

@@ -4,6 +4,6 @@ resources:
 #+kubebuilder:scaffold:manifestskustomizesamples
 
 images:
-  - name: worker-controller/sample-worker
+  - name: worker
     newName: sample-worker
-    newTag: MYNEWTAG-1
+#    newTag: latest

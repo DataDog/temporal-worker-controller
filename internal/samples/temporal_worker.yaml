@@ -17,14 +17,8 @@ spec:
     spec:
       containers:
         - name: main
-          image: worker-controller/sample-worker:latest
+          image: worker
           imagePullPolicy: Never
-          args:
-            - --workflow-version
-#            - v1
-#            - v2 # incompatible with v1
-            - v3 # incompatible with v1 and v2
-#            - v4 # this will fail to roll out
           env:
             - name: TEMPORAL_HOST_PORT
               value: "host.minikube.internal:7233"
