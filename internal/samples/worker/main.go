@@ -27,7 +27,7 @@ var (
 
 func main() {
 	if true {
-		panic("oh darn")
+		panic("oh darasdfsdfn")
 	}
 
 	// Read the value of the workflow-version flag.
