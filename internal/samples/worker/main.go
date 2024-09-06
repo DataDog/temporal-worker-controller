@@ -26,6 +26,10 @@ var (
 )
 
 func main() {
+	if true {
+		panic("oh darn")
+	}
+
 	// Read the value of the workflow-version flag.
 	var workflowVersion string
 	flag.StringVar(&workflowVersion, "workflow-version", "", "The workflow version to register with Temporal.")
