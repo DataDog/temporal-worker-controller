@@ -24,6 +24,10 @@ var (
 )
 
 func main() {
+	if true {
+		panic("oh darn")
+	}
+
 	l := log.NewStructuredLogger(slog.Default())
 	l.Info("Worker config",
 		"temporal.hostport", temporalHostPort,
@@ -57,13 +61,13 @@ func main() {
 }
 
 func HelloWorldWorkflow(ctx workflow.Context) (string, error) {
-	// if err := executeLocalActivity(ctx); err != nil {
-	// 	return "", err
-	// }
+	if err := executeLocalActivity(ctx); err != nil {
+		return "", err
+	}
 
-	// workflow.SideEffect(ctx, func(ctx workflow.Context) interface{} {
-	// 	return nil
-	// })
+	workflow.SideEffect(ctx, func(ctx workflow.Context) interface{} {
+		return nil
+	})
 
 	if err := workflow.Sleep(ctx, 30*time.Second); err != nil {
 		return "", err

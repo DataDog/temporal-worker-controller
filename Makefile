@@ -201,5 +201,12 @@ envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
 $(ENVTEST): $(LOCALBIN)
 	test -s $(LOCALBIN)/setup-envtest || GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
 
+.PHONY: install-datadog-agent
+install-datadog-agent: $(DD_API_KEY)
+	helm repo add datadog https://helm.datadoghq.com
+	helm repo update
+	# The DD_API_KEY can be found in the Datadog setup commands or on the API Keys page https://us1.datadoghq.com/organization-settings/api-keys
+	helm install --context minikube datadog-agent -f hack/datadog-values.yaml --set datadog.site='us1.datadoghq.com' --set datadog.apiKey='${DD_API_KEY}' datadog/datadog
+
 # View workflows filtered by Build ID
 # http://0.0.0.0:8233/namespaces/default/workflows?query=BuildIds+IN+%28%22versioned%3A5578f87d9c%22%29
