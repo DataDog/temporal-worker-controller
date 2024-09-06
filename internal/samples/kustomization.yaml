@@ -2,3 +2,8 @@
 resources:
 - temporal_worker.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples
+
+images:
+  - name: worker-controller/sample-worker
+    newName: sample-worker
+    newTag: MYNEWTAG-1
