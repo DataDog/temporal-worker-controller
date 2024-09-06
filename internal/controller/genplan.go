@@ -175,18 +175,24 @@ func getVersionConfigDiff(rules *workflowservice.GetWorkerVersioningRulesRespons
 	}
 	vcfg.buildID = status.TargetVersion.BuildID
 
-	if assignmentRules := rules.GetAssignmentRules(); len(assignmentRules) > 0 {
-		first := assignmentRules[0].GetRule()
-		if first.GetTargetBuildId() == vcfg.buildID {
-			ramp := first.GetPercentageRamp()
-			// Skip making changes if build id is already the default
-			if ramp == nil && vcfg.setDefault {
-				return nil
-			}
-			// Skip making changes if ramp is already set to the desired value
-			if ramp != nil && ramp.GetRampPercentage() == float32(vcfg.rampPercentage) {
-				return nil
-			}
+	// Set default version if no assignment rules exist
+	if len(rules.GetAssignmentRules()) == 0 {
+		vcfg.setDefault = true
+		vcfg.rampPercentage = 0
+		return vcfg
+	}
+
+	// Don't make updates if build id already the default or has correct ramp.
+	first := rules.GetAssignmentRules()[0].GetRule()
+	if first.GetTargetBuildId() == vcfg.buildID {
+		ramp := first.GetPercentageRamp()
+		// Skip making changes if build id is already the default
+		if ramp == nil {
+			return nil
+		}
+		// Skip making changes if ramp is already set to the desired value
+		if ramp.GetRampPercentage() == float32(vcfg.rampPercentage) {
+			return nil
 		}
 	}
 

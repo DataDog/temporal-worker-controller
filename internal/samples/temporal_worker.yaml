@@ -28,10 +28,6 @@ spec:
   rolloutStrategy:
 #    manual: {}
     blueGreen: {}
-    # other names:
-    # - rolling
-    # - rainbow
-    # - canary
 #    progressive:
 #      steps:
 #        - rampPercentage: 1
