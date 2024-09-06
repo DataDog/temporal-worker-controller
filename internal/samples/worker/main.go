@@ -41,16 +41,18 @@ func main() {
 	})
 	defer w.Stop()
 
-	w.RegisterWorkflowWithOptions(HelloWorldV1, workflow.RegisterOptions{Name: helloWorldWorkflow})
-	//w.RegisterWorkflowWithOptions(HelloWorldV2, workflow.RegisterOptions{Name: helloWorldWorkflow})
-	//w.RegisterWorkflowWithOptions(HelloWorldV3, workflow.RegisterOptions{Name: helloWorldWorkflow})
+	w.RegisterWorkflowWithOptions(Hello, workflow.RegisterOptions{Name: helloWorldWorkflow})
 
 	if err := w.Run(worker.InterruptCh()); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func HelloWorldV1(ctx workflow.Context) (string, error) {
+func Hello(ctx workflow.Context) (string, error) {
+	return hellov1(ctx)
+}
+
+func hellov1(ctx workflow.Context) (string, error) {
 	if err := workflow.Sleep(ctx, 30*time.Second); err != nil {
 		return "", err
 	}
@@ -58,15 +60,15 @@ func HelloWorldV1(ctx workflow.Context) (string, error) {
 	return "Hello World!", nil
 }
 
-func HelloWorldV2(ctx workflow.Context) (string, error) {
+func hellov2(ctx workflow.Context) (string, error) {
 	workflow.SideEffect(ctx, func(ctx workflow.Context) interface{} {
 		return nil
 	})
 
-	return HelloWorldV1(ctx)
+	return hellov1(ctx)
 }
 
-func HelloWorldV3(ctx workflow.Context) (string, error) {
+func hellov3(ctx workflow.Context) (string, error) {
 	if err := workflow.ExecuteLocalActivity(
 		workflow.WithLocalActivityOptions(ctx, workflow.LocalActivityOptions{
 			ScheduleToCloseTimeout: time.Second,
@@ -76,5 +78,5 @@ func HelloWorldV3(ctx workflow.Context) (string, error) {
 		return "", err
 	}
 
-	return HelloWorldV2(ctx)
+	return hellov2(ctx)
 }

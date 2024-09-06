@@ -14,9 +14,6 @@ deploy:
 manifests:
   rawYaml:
     - temporal_worker.yaml
-#  kustomize:
-#    paths:
-#      - .
 resourceSelector:
   allow:
     - groupKind: "TemporalWorker.temporal.io"
