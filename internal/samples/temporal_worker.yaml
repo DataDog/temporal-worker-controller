@@ -26,8 +26,8 @@ spec:
     temporalNamespace: "default"
     taskQueue: "hello_world"
   rolloutStrategy:
-    manual: {}
-#    blueGreen: {}
+#    manual: {}
+    blueGreen: {}
     # other names:
     # - rolling
     # - rainbow

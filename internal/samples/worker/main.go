@@ -6,7 +6,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"log"
 	"os"
 	"time"
@@ -26,15 +25,6 @@ var (
 )
 
 func main() {
-	// Read the value of the workflow-version flag.
-	var workflowVersion string
-	flag.StringVar(&workflowVersion, "workflow-version", "", "The workflow version to register with Temporal.")
-	flag.Parse()
-
-	if workflowVersion == "" {
-		log.Fatal("workflow-version flag is required")
-	}
-
 	log.Println("Worker config is: ", temporalHostPort, temporalNamespace, temporalTaskQueue, workerBuildID)
 
 	c, err := client.Dial(client.Options{
