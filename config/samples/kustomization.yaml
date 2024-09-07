@@ -1,0 +1,4 @@
+## Append samples of your project ##
+resources:
+- temporal.io_v1alpha1_temporalconnection.yaml
+#+kubebuilder:scaffold:manifestskustomizesamples
