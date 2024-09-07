@@ -7,22 +7,30 @@ import (
 	"go.temporal.io/sdk/workflow"
 )
 
-func HelloWorldWorkflow(ctx workflow.Context) (string, error) {
+func HelloWorld(ctx workflow.Context) (string, error) {
 	workflow.GetLogger(ctx).Info("HelloWorldWorkflow started")
 
-	if err := executeLocalActivity(ctx); err != nil {
-		return "", err
-	}
+	//workflow.SideEffect(ctx, func(ctx workflow.Context) interface{} {
+	//	return nil
+	//})
 
-	workflow.SideEffect(ctx, func(ctx workflow.Context) interface{} {
-		return nil
-	})
+	workflow.ExecuteActivity(
+		workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
+			ScheduleToCloseTimeout: time.Minute,
+		}),
+		Sleep, 30,
+	)
 
-	if err := workflow.Sleep(ctx, 30*time.Second); err != nil {
-		return "", err
-	}
+	//if err := workflow.Sleep(ctx, 30*time.Second); err != nil {
+	//	return "", err
+	//}
 
 	return "Hello World!", nil
+}
+
+func Sleep(ctx context.Context, seconds uint) error {
+	time.Sleep(time.Duration(seconds) * time.Second)
+	return nil
 }
 
 func executeLocalActivity(ctx workflow.Context) error {
@@ -30,6 +38,9 @@ func executeLocalActivity(ctx workflow.Context) error {
 		workflow.WithLocalActivityOptions(ctx, workflow.LocalActivityOptions{
 			ScheduleToCloseTimeout: time.Second,
 		}),
-		func(ctx context.Context) error { return nil },
+		func(ctx context.Context) error {
+			time.Sleep(time.Second)
+			return nil
+		},
 	).Get(ctx, nil)
 }

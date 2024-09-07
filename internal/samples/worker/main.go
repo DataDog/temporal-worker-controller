@@ -13,7 +13,6 @@ import (
 	"go.temporal.io/sdk/interceptor"
 	"go.temporal.io/sdk/log"
 	"go.temporal.io/sdk/worker"
-	"go.temporal.io/sdk/workflow"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
@@ -69,7 +68,9 @@ func main() {
 	})
 	defer w.Stop()
 
-	w.RegisterWorkflowWithOptions(HelloWorldWorkflow, workflow.RegisterOptions{Name: "hello_world"})
+	// Register activities and workflows
+	w.RegisterWorkflow(HelloWorld)
+	w.RegisterActivity(Sleep)
 
 	if err := w.Run(worker.InterruptCh()); err != nil {
 		l.Error("Unable to start worker", "error", err)
