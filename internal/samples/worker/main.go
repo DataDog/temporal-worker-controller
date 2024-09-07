@@ -8,8 +8,10 @@ import (
 	"log/slog"
 	"os"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/contrib/datadog/tracing"
+	"go.temporal.io/sdk/contrib/opentelemetry"
 	"go.temporal.io/sdk/interceptor"
 	"go.temporal.io/sdk/log"
 	"go.temporal.io/sdk/worker"
@@ -54,6 +56,11 @@ func main() {
 				DisableQueryTracing:  false,
 			}),
 		},
+		MetricsHandler: opentelemetry.NewMetricsHandler(opentelemetry.MetricsHandlerOptions{
+			Meter:             nil,
+			InitialAttributes: attribute.Set{},
+			OnError:           nil,
+		}),
 	})
 	if err != nil {
 		l.Error("Unable to create Temporal client", "error", err)

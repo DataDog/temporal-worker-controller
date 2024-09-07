@@ -1,5 +1,6 @@
 kubelet:
   tlsVerify: false
+
 clusterAgent:
   admissionController:
     enabled: true
@@ -7,6 +8,7 @@ clusterAgent:
   env:
     - name: DD_KUBELET_TLS_VERIFY
       value: "false"
+
 datadog:
   apiKeyExistingSecret: datadog-api-key
   clusterName: minikube.jlegrone
@@ -33,3 +35,10 @@ datadog:
   orchestratorExplorer:
     customResources:
       - temporal.io/v1alpha1/temporalworkers
+
+otlp:
+  receiver:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+        enabled: true
