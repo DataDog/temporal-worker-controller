@@ -21,8 +21,8 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	temporaliov1alpha1 "github.com/DataDog/temporal-worker-controller/api/v1alpha1"
-	"github.com/DataDog/temporal-worker-controller/internal/clientpool"
 	"github.com/DataDog/temporal-worker-controller/internal/controller"
+	"github.com/DataDog/temporal-worker-controller/internal/controller/clientpool"
 	//+kubebuilder:scaffold:imports
 )
 

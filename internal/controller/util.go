@@ -10,7 +10,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 
 	temporaliov1alpha1 "github.com/DataDog/temporal-worker-controller/api/v1alpha1"
-	"github.com/DataDog/temporal-worker-controller/internal/k8s.io/utils"
+	"github.com/DataDog/temporal-worker-controller/internal/controller/k8s.io/utils"
 )
 
 func findHighestPriorityStatus(statuses []temporaliov1alpha1.ReachabilityStatus) temporaliov1alpha1.ReachabilityStatus {
