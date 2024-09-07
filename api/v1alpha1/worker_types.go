@@ -12,8 +12,10 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 type WorkerOptions struct {
-	TemporalNamespace string `json:"temporalNamespace"`
-	TaskQueue         string `json:"taskQueue"`
+	// The name of a TemporalConnection in the same namespace as the TemporalWorker.
+	TemporalConnection string `json:"connection"`
+	TemporalNamespace  string `json:"temporalNamespace"`
+	TaskQueue          string `json:"taskQueue"`
 }
 
 // TemporalWorkerSpec defines the desired state of TemporalWorker

@@ -1,17 +1,22 @@
 apiVersion: temporal.io/v1alpha1
 kind: TemporalWorker
 metadata:
+  name: dev-server
+spec:
+  hostPort: "host.minikube.internal:7233"
+---
+apiVersion: temporal.io/v1alpha1
+kind: TemporalWorker
+metadata:
   labels:
-    app.kubernetes.io/name: sample
+    app.kubernetes.io/name: hello-world-worker
     app.kubernetes.io/instance: sample
-    app.kubernetes.io/part-of: worker-controller
-    app.kubernetes.io/created-by: worker-controller
   name: sample
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app.kubernetes.io/name: sample
+      app.kubernetes.io/name: hello-world-worker
       app.kubernetes.io/instance: sample
   template:
     spec:
@@ -20,8 +25,6 @@ spec:
           image: worker
           imagePullPolicy: Never
           env:
-            - name: TEMPORAL_HOST_PORT
-              value: "host.minikube.internal:7233"
             - name: HOST_IP
               valueFrom:
                 fieldRef:
@@ -29,6 +32,7 @@ spec:
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: "http://$(HOST_IP):4317"
   workerOptions:
+    temporalConnection: dev-server
     temporalNamespace: "default"
     taskQueue: "hello_world"
   rolloutStrategy:
