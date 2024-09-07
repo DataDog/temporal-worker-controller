@@ -8,6 +8,8 @@ build:
       context: worker
       docker:
         dockerfile: Dockerfile
+  tagPolicy:
+    gitCommit: {}
 deploy:
   kubeContext: minikube
   kubectl: {}
