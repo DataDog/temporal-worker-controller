@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -34,7 +35,7 @@ const (
 type TemporalWorkerReconciler struct {
 	client.Client
 	Scheme             *runtime.Scheme
-	temporalClientPool clientpool.ClientPool
+	temporalClientPool *clientpool.ClientPool
 }
 
 //+kubebuilder:rbac:groups=temporal.io,resources=temporalworkers,verbs=get;list;watch;create;update;patch;delete
@@ -61,12 +62,18 @@ func (r *TemporalWorkerReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	if workerDeploy.Spec.WorkerOptions.TemporalConnection == "" {
-		l.Error(nil, "TemporalConnection not set")
-		return ctrl.Result{}, nil
+		err := fmt.Errorf("TemporalConnection must be set")
+		l.Error(err, "")
+		return ctrl.Result{}, err
+	}
+	temporalClient, ok := r.temporalClientPool.GetWorkflowServiceClient(workerDeploy.Spec.WorkerOptions.TemporalConnection, workerDeploy.Namespace)
+	if !ok {
+		err := fmt.Errorf("unable to get TemporalConnection")
+		return ctrl.Result{}, err
 	}
 
 	// Compute a new status from k8s and temporal state
-	status, rules, err := r.generateStatus(ctx, l, req, &workerDeploy)
+	status, rules, err := r.generateStatus(ctx, l, temporalClient, req, &workerDeploy)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -91,7 +98,7 @@ func (r *TemporalWorkerReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	// Execute the plan, handling any errors
-	if err := r.executePlan(ctx, l, plan); err != nil {
+	if err := r.executePlan(ctx, l, temporalClient, plan); err != nil {
 		return ctrl.Result{}, err
 	}
 

@@ -138,7 +138,7 @@ func newVersionedDeploymentCollection() versionedDeploymentCollection {
 	}
 }
 
-func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, l logr.Logger, req ctrl.Request, workerDeploy *temporaliov1alpha1.TemporalWorker) (*temporaliov1alpha1.TemporalWorkerStatus, *workflowservice.GetWorkerVersioningRulesResponse, error) {
+func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, l logr.Logger, temporalClient workflowservice.WorkflowServiceClient, req ctrl.Request, workerDeploy *temporaliov1alpha1.TemporalWorker) (*temporaliov1alpha1.TemporalWorkerStatus, *workflowservice.GetWorkerVersioningRulesResponse, error) {
 	var (
 		desiredBuildID, defaultBuildID string
 		deployedBuildIDs               []string
@@ -167,7 +167,7 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, l logr.Lo
 	}
 
 	// Get worker versioning rules via Temporal API
-	rules, err := r.WorkflowServiceClient.GetWorkerVersioningRules(ctx, &workflowservice.GetWorkerVersioningRulesRequest{
+	rules, err := temporalClient.GetWorkerVersioningRules(ctx, &workflowservice.GetWorkerVersioningRulesRequest{
 		Namespace: workerDeploy.Spec.WorkerOptions.TemporalNamespace,
 		TaskQueue: workerDeploy.Spec.WorkerOptions.TaskQueue,
 	})
@@ -204,7 +204,7 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, l logr.Lo
 	}
 
 	// Get reachability info for all build IDs associated with the task queue via the Temporal API
-	tq, err := r.WorkflowServiceClient.DescribeTaskQueue(ctx, &workflowservice.DescribeTaskQueueRequest{
+	tq, err := temporalClient.DescribeTaskQueue(ctx, &workflowservice.DescribeTaskQueueRequest{
 		ApiMode:   enums.DESCRIBE_TASK_QUEUE_MODE_ENHANCED,
 		Namespace: workerDeploy.Spec.WorkerOptions.TemporalNamespace,
 		TaskQueue: &taskqueue.TaskQueue{

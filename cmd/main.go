@@ -23,6 +23,7 @@ import (
 	"go.temporal.io/sdk/client"
 
 	temporaliov1alpha1 "github.com/DataDog/temporal-worker-controller/api/v1alpha1"
+	"github.com/DataDog/temporal-worker-controller/internal/clientpool"
 	"github.com/DataDog/temporal-worker-controller/internal/controller"
 	//+kubebuilder:scaffold:imports
 )
@@ -97,9 +98,9 @@ func main() {
 	}
 
 	if err = (&controller.TemporalWorkerReconciler{
-		Client:                mgr.GetClient(),
-		Scheme:                mgr.GetScheme(),
-		WorkflowServiceClient: temporalClient.WorkflowService(),
+		Client:             mgr.GetClient(),
+		Scheme:             mgr.GetScheme(),
+		temporalClientPool: clientpool.New(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "TemporalWorker")
 		os.Exit(1)
