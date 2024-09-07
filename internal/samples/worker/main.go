@@ -28,6 +28,7 @@ func main() {
 	tracer.Start(
 		tracer.WithUniversalVersion(workerBuildID),
 		tracer.WithLogStartup(false),
+		tracer.WithSampler(tracer.NewAllSampler()),
 	)
 	defer tracer.Stop()
 
