@@ -33,10 +33,6 @@ profiles:
       kustomize:
         paths:
           - config/manager
-  - name: rbac
-    manifests:
-      kustomize:
-        paths:
           - config/rbac
   - name: demo
     manifests:
