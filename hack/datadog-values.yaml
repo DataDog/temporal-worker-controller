@@ -1,6 +1,9 @@
 kubelet:
   tlsVerify: false
 clusterAgent:
+  admissionController:
+    enabled: true
+    mutateUnlabelled: true
   env:
     - name: DD_KUBELET_TLS_VERIFY
       value: "false"
@@ -14,7 +17,8 @@ datadog:
     enabled: true
     processCollection: true
   apm:
-    portEnabled: true
+#    portEnabled: true
+    socketEnabled: true
   tags:
     - "demo:worker-versioning"
   env:
