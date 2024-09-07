@@ -203,6 +203,30 @@ type TemporalWorkerList struct {
 	Items           []TemporalWorker `json:"items"`
 }
 
+type TemporalConnectionSpec struct {
+	// The host and port of the Temporal server.
+	HostPort string `json:"hostPort"`
+}
+
+//+kubebuilder:object:root=true
+
+// TemporalConnection defines a connection to a Temporal server.
+type TemporalConnection struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec TemporalConnectionSpec `json:"spec,omitempty"`
+}
+
+//+kubebuilder:object:root=true
+
+// TemporalConnectionList contains a list of TemporalConnection
+type TemporalConnectionList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []TemporalConnection `json:"items"`
+}
+
 func init() {
 	SchemeBuilder.Register(&TemporalWorker{}, &TemporalWorkerList{})
 }
