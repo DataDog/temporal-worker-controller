@@ -37,7 +37,7 @@ profiles:
   - name: demo
     manifests:
       rawYaml:
-        - internal/samples/worker/temporal_worker.yaml
+        - internal/samples/temporal_worker.yaml
 deploy:
   kubeContext: minikube
   kubectl: {}
