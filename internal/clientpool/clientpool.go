@@ -1,7 +1,6 @@
 package clientpool
 
 import (
-	"fmt"
 	"sync"
 
 	"go.temporal.io/api/workflowservice/v1"
@@ -19,26 +18,31 @@ func New() *ClientPool {
 	}
 }
 
-func (cp *ClientPool) GetWorkflowServiceClient(k8sName, k8sNamespace string) (workflowservice.WorkflowServiceClient, bool) {
-	key := newClientKey(k8sName, k8sNamespace)
-
+func (cp *ClientPool) GetWorkflowServiceClient(hostPort string) (workflowservice.WorkflowServiceClient, bool) {
 	cp.mux.RLock()
 	defer cp.mux.RUnlock()
 
-	c, ok := cp.clients[key]
+	c, ok := cp.clients[hostPort]
 	if ok {
 		return c.WorkflowService(), true
 	}
 	return nil, false
 }
 
-func (cp *ClientPool) UpsertClient(k8sName, k8sNamespace string, c client.Client) {
-	key := newClientKey(k8sName, k8sNamespace)
+func (cp *ClientPool) UpsertClient(hostPort string) (workflowservice.WorkflowServiceClient, error) {
+	c, err := client.Dial(client.Options{
+		HostPort: hostPort,
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	cp.mux.Lock()
 	defer cp.mux.Unlock()
 
-	cp.clients[key] = c
+	cp.clients[hostPort] = c
+
+	return c.WorkflowService(), nil
 }
 
 func (cp *ClientPool) Close() {
@@ -50,8 +54,4 @@ func (cp *ClientPool) Close() {
 	}
 
 	cp.clients = make(map[string]client.Client)
-}
-
-func newClientKey(k8sName, k8sNamespace string) string {
-	return fmt.Sprintf("%s/%s", k8sName, k8sNamespace)
 }

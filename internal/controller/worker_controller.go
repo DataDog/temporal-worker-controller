@@ -78,10 +78,15 @@ func (r *TemporalWorkerReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, err
 	}
 
-	temporalClient, ok := r.TemporalClientPool.GetWorkflowServiceClient(workerDeploy.Spec.WorkerOptions.TemporalConnection, workerDeploy.Namespace)
+	// Get or update temporal client for connection
+	temporalClient, ok := r.TemporalClientPool.GetWorkflowServiceClient(temporalConnection.Spec.HostPort)
 	if !ok {
-		err := fmt.Errorf("unable to get TemporalConnection")
-		return ctrl.Result{}, err
+		c, err := r.TemporalClientPool.UpsertClient(temporalConnection.Spec.HostPort)
+		if err != nil {
+			l.Error(err, "unable to create TemporalClient")
+			return ctrl.Result{}, err
+		}
+		temporalClient = c
 	}
 
 	// Compute a new status from k8s and temporal state
