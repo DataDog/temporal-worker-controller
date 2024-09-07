@@ -20,12 +20,12 @@ var (
 	temporalHostPort  = os.Getenv("TEMPORAL_HOST_PORT")
 	temporalNamespace = os.Getenv("TEMPORAL_NAMESPACE")
 	temporalTaskQueue = os.Getenv("TEMPORAL_TASK_QUEUE")
-	workerBuildID     = os.Getenv("TEMPORAL_BUILD_ID")
+	buildID           = os.Getenv("TEMPORAL_BUILD_ID")
 )
 
 func main() {
 	tracer.Start(
-		tracer.WithUniversalVersion(workerBuildID),
+		tracer.WithUniversalVersion(buildID),
 		tracer.WithLogStartup(false),
 		tracer.WithSampler(tracer.NewAllSampler()),
 	)
@@ -41,9 +41,7 @@ func main() {
 		"temporal.hostport", temporalHostPort,
 		"temporal.namespace", temporalNamespace,
 		"temporal.taskqueue", temporalTaskQueue,
-		"worker.buildID", workerBuildID,
-		"git.commit", os.Getenv("DD_GIT_COMMIT_SHA"),
-		"git.repo", os.Getenv("DD_GIT_REPOSITORY_URL"),
+		"worker.buildID", buildID,
 	)
 
 	c, err := client.Dial(client.Options{
@@ -63,7 +61,7 @@ func main() {
 	}
 
 	w := worker.New(c, temporalTaskQueue, worker.Options{
-		BuildID:                 workerBuildID,
+		BuildID:                 buildID,
 		UseBuildIDForVersioning: true,
 	})
 	defer w.Stop()

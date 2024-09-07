@@ -14,16 +14,18 @@ func HelloWorld(ctx workflow.Context) (string, error) {
 	//	return nil
 	//})
 
-	workflow.ExecuteActivity(
-		workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
-			ScheduleToCloseTimeout: time.Minute,
-		}),
-		Sleep, 30,
-	)
-
-	//if err := workflow.Sleep(ctx, 30*time.Second); err != nil {
+	//if err := workflow.ExecuteActivity(
+	//	workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
+	//		ScheduleToCloseTimeout: time.Minute,
+	//	}),
+	//	Sleep, 15,
+	//).Get(ctx, nil); err != nil {
 	//	return "", err
 	//}
+
+	if err := workflow.Sleep(ctx, 30*time.Second); err != nil {
+		return "", err
+	}
 
 	return "Hello World!", nil
 }

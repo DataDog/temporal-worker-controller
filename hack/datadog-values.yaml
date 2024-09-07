@@ -19,8 +19,11 @@ datadog:
   apm:
 #    portEnabled: true
     socketEnabled: true
+  podLabelsAsTags:
+    "temporal.io/build-id": "version"
   tags:
     - "demo:worker-versioning"
+    - "env:staging"
   env:
     - name: DD_KUBELET_TLS_VERIFY
       value: "false"
