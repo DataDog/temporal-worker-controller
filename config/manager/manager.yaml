@@ -9,13 +9,13 @@ metadata:
     app.kubernetes.io/created-by: worker-controller
     app.kubernetes.io/part-of: worker-controller
     app.kubernetes.io/managed-by: kustomize
-  name: system
+  name: temporal-system
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: controller-manager
-  namespace: system
+  namespace: temporal-system
   labels:
     control-plane: controller-manager
     app.kubernetes.io/name: deployment

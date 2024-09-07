@@ -33,11 +33,6 @@ profiles:
       kustomize:
         paths:
           - config/manager
-  - name: prometheus
-    manifests:
-      kustomize:
-        paths:
-          - config/prometheus
   - name: rbac
     manifests:
       kustomize:
