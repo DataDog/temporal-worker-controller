@@ -20,8 +20,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
-	"go.temporal.io/sdk/client"
-
 	temporaliov1alpha1 "github.com/DataDog/temporal-worker-controller/api/v1alpha1"
 	"github.com/DataDog/temporal-worker-controller/internal/clientpool"
 	"github.com/DataDog/temporal-worker-controller/internal/controller"
@@ -87,20 +85,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	// TODO(jlegrone): Remove hardcoded client config & support multiple temporal namespaces.
-	temporalClient, err := client.Dial(client.Options{
-		HostPort:  "localhost:7233",
-		Namespace: "default",
-	})
-	if err != nil {
-		setupLog.Error(err, "unable to create temporal client")
-		os.Exit(1)
-	}
-
 	if err = (&controller.TemporalWorkerReconciler{
 		Client:             mgr.GetClient(),
 		Scheme:             mgr.GetScheme(),
-		temporalClientPool: clientpool.New(),
+		TemporalClientPool: clientpool.New(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "TemporalWorker")
 		os.Exit(1)

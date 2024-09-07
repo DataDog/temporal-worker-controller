@@ -13,6 +13,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -35,7 +36,7 @@ const (
 type TemporalWorkerReconciler struct {
 	client.Client
 	Scheme             *runtime.Scheme
-	temporalClientPool *clientpool.ClientPool
+	TemporalClientPool *clientpool.ClientPool
 }
 
 //+kubebuilder:rbac:groups=temporal.io,resources=temporalworkers,verbs=get;list;watch;create;update;patch;delete
@@ -60,13 +61,24 @@ func (r *TemporalWorkerReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		// on deleted requests.
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-
+	// Verify that a connection is configured
 	if workerDeploy.Spec.WorkerOptions.TemporalConnection == "" {
 		err := fmt.Errorf("TemporalConnection must be set")
 		l.Error(err, "")
 		return ctrl.Result{}, err
 	}
-	temporalClient, ok := r.temporalClientPool.GetWorkflowServiceClient(workerDeploy.Spec.WorkerOptions.TemporalConnection, workerDeploy.Namespace)
+
+	// Fetch the connection parameters
+	var temporalConnection temporaliov1alpha1.TemporalConnection
+	if err := r.Get(ctx, types.NamespacedName{
+		Name:      workerDeploy.Spec.WorkerOptions.TemporalConnection,
+		Namespace: workerDeploy.Namespace,
+	}, &temporalConnection); err != nil {
+		l.Error(err, "unable to fetch TemporalConnection")
+		return ctrl.Result{}, err
+	}
+
+	temporalClient, ok := r.TemporalClientPool.GetWorkflowServiceClient(workerDeploy.Spec.WorkerOptions.TemporalConnection, workerDeploy.Namespace)
 	if !ok {
 		err := fmt.Errorf("unable to get TemporalConnection")
 		return ctrl.Result{}, err
@@ -92,7 +104,7 @@ func (r *TemporalWorkerReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	// Generate a plan to get to desired spec from current status
-	plan, err := r.generatePlan(ctx, &workerDeploy, rules)
+	plan, err := r.generatePlan(ctx, &workerDeploy, rules, temporalConnection.Spec)
 	if err != nil {
 		return ctrl.Result{}, err
 	}

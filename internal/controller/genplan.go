@@ -54,6 +54,7 @@ func (r *TemporalWorkerReconciler) generatePlan(
 	ctx context.Context,
 	w *temporaliov1alpha1.TemporalWorker,
 	rules *workflowservice.GetWorkerVersioningRulesResponse,
+	connection temporaliov1alpha1.TemporalConnectionSpec,
 ) (*plan, error) {
 	plan := plan{
 		TemporalNamespace: w.Spec.WorkerOptions.TemporalNamespace,
@@ -119,7 +120,7 @@ func (r *TemporalWorkerReconciler) generatePlan(
 	if targetVersion := w.Status.TargetVersion; targetVersion != nil {
 		if targetVersion.Deployment == nil {
 			// Create new deployment from current pod template when it doesn't exist
-			d, err := r.newDeployment(w, desiredBuildID)
+			d, err := r.newDeployment(w, desiredBuildID, connection)
 			if err != nil {
 				return nil, err
 			}
@@ -264,8 +265,9 @@ func (r *TemporalWorkerReconciler) getDeployment(ctx context.Context, ref *v1.Ob
 func (r *TemporalWorkerReconciler) newDeployment(
 	w *temporaliov1alpha1.TemporalWorker,
 	buildID string,
+	connection temporaliov1alpha1.TemporalConnectionSpec,
 ) (*appsv1.Deployment, error) {
-	d := newDeploymentWithoutOwnerRef(&w.TypeMeta, &w.ObjectMeta, &w.Spec, buildID)
+	d := newDeploymentWithoutOwnerRef(&w.TypeMeta, &w.ObjectMeta, &w.Spec, buildID, connection)
 	if err := ctrl.SetControllerReference(w, d, r.Scheme); err != nil {
 		return nil, err
 	}
@@ -277,6 +279,7 @@ func newDeploymentWithoutOwnerRef(
 	objectMeta *metav1.ObjectMeta,
 	spec *temporaliov1alpha1.TemporalWorkerSpec,
 	buildID string,
+	connection temporaliov1alpha1.TemporalConnectionSpec,
 ) *appsv1.Deployment {
 	labels := map[string]string{}
 	// Merge labels from TemporalWorker with build ID
