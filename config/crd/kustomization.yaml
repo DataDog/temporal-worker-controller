@@ -3,7 +3,7 @@
 # It should be run by config/default
 resources:
 - bases/temporal.io_temporalworkers.yaml
-- bases/temporal.io.temporal.io_temporalconnections.yaml
+- bases/temporal.io_temporalconnections.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
 
 patches: []
