@@ -17,8 +17,11 @@ datadog:
     enabled: true
     processCollection: true
   apm:
-#    portEnabled: true
     socketEnabled: true
+  kubeStateMetricsCore:
+    labelsAsTags:
+      pod:
+        "temporal.io/build-id": "version"
   podLabelsAsTags:
     "temporal.io/build-id": "version"
   tags:
@@ -27,3 +30,6 @@ datadog:
   env:
     - name: DD_KUBELET_TLS_VERIFY
       value: "false"
+  orchestratorExplorer:
+    customResources:
+      - temporal.io/v1alpha1/temporalworkers

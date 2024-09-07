@@ -10,9 +10,9 @@ import (
 func HelloWorld(ctx workflow.Context) (string, error) {
 	workflow.GetLogger(ctx).Info("HelloWorldWorkflow started")
 
-	//workflow.SideEffect(ctx, func(ctx workflow.Context) interface{} {
-	//	return nil
-	//})
+	workflow.SideEffect(ctx, func(ctx workflow.Context) interface{} {
+		return nil
+	})
 
 	//if err := workflow.ExecuteActivity(
 	//	workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
@@ -23,11 +23,11 @@ func HelloWorld(ctx workflow.Context) (string, error) {
 	//	return "", err
 	//}
 
-	if err := workflow.Sleep(ctx, 30*time.Second); err != nil {
-		return "", err
-	}
+	//if err := workflow.Sleep(ctx, 30*time.Second); err != nil {
+	//	return "", err
+	//}
 
-	return "Hello World!", nil
+	return "Hello World!!!!", nil
 }
 
 func Sleep(ctx context.Context, seconds uint) error {
