@@ -1,0 +1,57 @@
+apiVersion: skaffold/v4beta11
+kind: Config
+metadata:
+  name: worker-controller
+build:
+  artifacts:
+    - image: controller
+      docker:
+        dockerfile: Dockerfile
+    - image: worker
+      context: internal/samples/worker
+      docker:
+        dockerfile: Dockerfile
+        buildArgs:
+          DD_GIT_COMMIT_SHA: "{{ .IMAGE_TAG }}"
+          DD_GIT_REPOSITORY_URL: "github.com/DataDog/temporal-worker-controller"
+  tagPolicy:
+    gitCommit:
+      variant: CommitSha
+      ignoreChanges: true
+manifests:
+  kustomize:
+    paths:
+      - config/crd
+profiles:
+  - name: default
+    manifests:
+      kustomize:
+        paths:
+          - config/default
+  - name: manager
+    manifests:
+      kustomize:
+        paths:
+          - config/manager
+  - name: prometheus
+    manifests:
+      kustomize:
+        paths:
+          - config/prometheus
+  - name: rbac
+    manifests:
+      kustomize:
+        paths:
+          - config/rbac
+  - name: demo
+    manifests:
+      rawYaml:
+        - internal/samples/worker/temporal_worker.yaml
+deploy:
+  kubeContext: minikube
+  kubectl: {}
+resourceSelector:
+  allow:
+    - groupKind: "TemporalWorker.temporal.io"
+      image: [".*"]
+      labels: [".*"]

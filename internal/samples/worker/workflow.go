@@ -34,15 +34,3 @@ func Sleep(ctx context.Context, seconds uint) error {
 	time.Sleep(time.Duration(seconds) * time.Second)
 	return nil
 }
-
-func executeLocalActivity(ctx workflow.Context) error {
-	return workflow.ExecuteLocalActivity(
-		workflow.WithLocalActivityOptions(ctx, workflow.LocalActivityOptions{
-			ScheduleToCloseTimeout: time.Second,
-		}),
-		func(ctx context.Context) error {
-			time.Sleep(time.Second)
-			return nil
-		},
-	).Get(ctx, nil)
-}
