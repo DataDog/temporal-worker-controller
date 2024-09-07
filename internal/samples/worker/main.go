@@ -5,15 +5,16 @@
 package main
 
 import (
-	"context"
 	"log/slog"
 	"os"
-	"time"
 
 	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/contrib/datadog/tracing"
+	"go.temporal.io/sdk/interceptor"
 	"go.temporal.io/sdk/log"
 	"go.temporal.io/sdk/worker"
 	"go.temporal.io/sdk/workflow"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
 var (
@@ -24,7 +25,17 @@ var (
 )
 
 func main() {
-	l := log.NewStructuredLogger(slog.Default())
+	tracer.Start(
+		tracer.WithUniversalVersion(workerBuildID),
+	)
+	defer tracer.Stop()
+
+	l := log.NewStructuredLogger(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		AddSource:   true,
+		Level:       slog.LevelDebug,
+		ReplaceAttr: nil,
+	})))
+
 	l.Info("Worker config",
 		"temporal.hostport", temporalHostPort,
 		"temporal.namespace", temporalNamespace,
@@ -36,6 +47,12 @@ func main() {
 		HostPort:  temporalHostPort,
 		Namespace: temporalNamespace,
 		Logger:    l,
+		Interceptors: []interceptor.ClientInterceptor{
+			tracing.NewTracingInterceptor(tracing.TracerOptions{
+				DisableSignalTracing: false,
+				DisableQueryTracing:  false,
+			}),
+		},
 	})
 	if err != nil {
 		l.Error("Unable to create Temporal client", "error", err)
@@ -54,31 +71,4 @@ func main() {
 		l.Error("Unable to start worker", "error", err)
 		os.Exit(1)
 	}
-}
-
-func HelloWorldWorkflow(ctx workflow.Context) (string, error) {
-	workflow.GetLogger(ctx).Info("HelloWorldWorkflow started")
-
-	if err := executeLocalActivity(ctx); err != nil {
-		return "", err
-	}
-
-	workflow.SideEffect(ctx, func(ctx workflow.Context) interface{} {
-		return nil
-	})
-
-	if err := workflow.Sleep(ctx, 30*time.Second); err != nil {
-		return "", err
-	}
-
-	return "Hello World!", nil
-}
-
-func executeLocalActivity(ctx workflow.Context) error {
-	return workflow.ExecuteLocalActivity(
-		workflow.WithLocalActivityOptions(ctx, workflow.LocalActivityOptions{
-			ScheduleToCloseTimeout: time.Second,
-		}),
-		func(ctx context.Context) error { return nil },
-	).Get(ctx, nil)
 }

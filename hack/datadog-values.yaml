@@ -4,12 +4,19 @@ clusterAgent:
   env:
     - name: DD_KUBELET_TLS_VERIFY
       value: "false"
-    - name: DD_ENV
-      value: "minikube"
 datadog:
   apiKeyExistingSecret: datadog-api-key
+  clusterName: minikube.jlegrone
+  logs:
+    enabled: true
+    containerCollectAll: true
+  processAgent:
+    enabled: true
+    processCollection: true
+  apm:
+    portEnabled: true
+  tags:
+    - "demo:worker-versioning"
   env:
     - name: DD_KUBELET_TLS_VERIFY
       value: "false"
-    - name: DD_ENV
-      value: "minikube"
