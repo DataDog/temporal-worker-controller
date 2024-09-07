@@ -1,5 +1,15 @@
 kubelet:
   tlsVerify: false
-env:
-  - name: DD_KUBELET_TLS_VERIFY
-    value: "false"
+clusterAgent:
+  env:
+    - name: DD_KUBELET_TLS_VERIFY
+      value: "false"
+    - name: DD_ENV
+      value: "minikube"
+datadog:
+  apiKeyExistingSecret: datadog-api-key
+  env:
+    - name: DD_KUBELET_TLS_VERIFY
+      value: "false"
+    - name: DD_ENV
+      value: "minikube"

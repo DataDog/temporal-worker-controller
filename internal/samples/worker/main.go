@@ -57,6 +57,8 @@ func main() {
 }
 
 func HelloWorldWorkflow(ctx workflow.Context) (string, error) {
+	workflow.GetLogger(ctx).Info("HelloWorldWorkflow started")
+
 	if err := executeLocalActivity(ctx); err != nil {
 		return "", err
 	}
