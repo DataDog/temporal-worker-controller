@@ -22,6 +22,8 @@ rules:
   - temporalconnections
   verbs:
   - get
+  - list
+  - watch
 - apiGroups:
   - temporal.io
   resources:

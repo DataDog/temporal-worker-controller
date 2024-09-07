@@ -42,7 +42,7 @@ type TemporalWorkerReconciler struct {
 //+kubebuilder:rbac:groups=temporal.io,resources=temporalworkers,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=temporal.io,resources=temporalworkers/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=temporal.io,resources=temporalworkers/finalizers,verbs=update
-//+kubebuilder:rbac:groups=temporal.io,resources=temporalconnections,verbs=get
+//+kubebuilder:rbac:groups=temporal.io,resources=temporalconnections,verbs=get;list;watch
 //+kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
