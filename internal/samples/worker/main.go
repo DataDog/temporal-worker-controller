@@ -27,6 +27,7 @@ var (
 func main() {
 	tracer.Start(
 		tracer.WithUniversalVersion(workerBuildID),
+		tracer.WithLogStartup(false),
 	)
 	defer tracer.Stop()
 
