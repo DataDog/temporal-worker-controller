@@ -3313,11 +3313,14 @@ spec:
                 type: object
               workerOptions:
                 properties:
+                  connection:
+                    type: string
                   taskQueue:
                     type: string
                   temporalNamespace:
                     type: string
                 required:
+                - connection
                 - taskQueue
                 - temporalNamespace
                 type: object

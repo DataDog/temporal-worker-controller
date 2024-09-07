@@ -1,5 +1,5 @@
 apiVersion: temporal.io/v1alpha1
-kind: TemporalWorker
+kind: TemporalConnection
 metadata:
   name: dev-server
 spec:
@@ -32,7 +32,7 @@ spec:
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: "http://$(HOST_IP):4317"
   workerOptions:
-    temporalConnection: dev-server
+    connection: dev-server
     temporalNamespace: "default"
     taskQueue: "hello_world"
   rolloutStrategy:

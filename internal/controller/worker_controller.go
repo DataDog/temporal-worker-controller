@@ -8,7 +8,6 @@ import (
 	"context"
 	"time"
 
-	"go.temporal.io/api/workflowservice/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -18,6 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	temporaliov1alpha1 "github.com/DataDog/temporal-worker-controller/api/v1alpha1"
+	"github.com/DataDog/temporal-worker-controller/internal/clientpool"
 )
 
 var (
@@ -33,9 +33,8 @@ const (
 // TemporalWorkerReconciler reconciles a TemporalWorker object
 type TemporalWorkerReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
-	// TODO(jlegrone): Support multiple Temporal servers
-	WorkflowServiceClient workflowservice.WorkflowServiceClient
+	Scheme             *runtime.Scheme
+	temporalClientPool clientpool.ClientPool
 }
 
 //+kubebuilder:rbac:groups=temporal.io,resources=temporalworkers,verbs=get;list;watch;create;update;patch;delete
@@ -59,6 +58,11 @@ func (r *TemporalWorkerReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		// requeue (we'll need to wait for a new notification), and we can get them
 		// on deleted requests.
 		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	if workerDeploy.Spec.WorkerOptions.TemporalConnection == "" {
+		l.Error(nil, "TemporalConnection not set")
+		return ctrl.Result{}, nil
 	}
 
 	// Compute a new status from k8s and temporal state
