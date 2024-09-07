@@ -41,6 +41,8 @@ func main() {
 		"temporal.namespace", temporalNamespace,
 		"temporal.taskqueue", temporalTaskQueue,
 		"worker.buildID", workerBuildID,
+		"git.commit", os.Getenv("DD_GIT_COMMIT_SHA"),
+		"git.repo", os.Getenv("DD_GIT_REPOSITORY_URL"),
 	)
 
 	c, err := client.Dial(client.Options{
