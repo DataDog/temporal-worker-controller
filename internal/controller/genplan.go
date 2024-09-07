@@ -297,16 +297,24 @@ func newDeploymentWithoutOwnerRef(
 	}
 
 	for i, container := range spec.Template.Spec.Containers {
-		container.Env = append(container.Env, v1.EnvVar{
-			Name:  "TEMPORAL_NAMESPACE",
-			Value: spec.WorkerOptions.TemporalNamespace,
-		}, v1.EnvVar{
-			Name:  "TEMPORAL_TASK_QUEUE",
-			Value: spec.WorkerOptions.TaskQueue,
-		}, v1.EnvVar{
-			Name:  "TEMPORAL_BUILD_ID",
-			Value: buildID,
-		})
+		container.Env = append(container.Env,
+			v1.EnvVar{
+				Name:  "TEMPORAL_HOST_PORT",
+				Value: connection.HostPort,
+			},
+			v1.EnvVar{
+				Name:  "TEMPORAL_NAMESPACE",
+				Value: spec.WorkerOptions.TemporalNamespace,
+			},
+			v1.EnvVar{
+				Name:  "TEMPORAL_TASK_QUEUE",
+				Value: spec.WorkerOptions.TaskQueue,
+			},
+			v1.EnvVar{
+				Name:  "TEMPORAL_BUILD_ID",
+				Value: buildID,
+			},
+		)
 		spec.Template.Spec.Containers[i] = container
 	}
 
