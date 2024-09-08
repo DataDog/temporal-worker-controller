@@ -91,7 +91,7 @@ func main() {
 		UseBuildIDForVersioning: true,
 		// Be nice to the dev server
 		MaxConcurrentWorkflowTaskPollers: 2,
-		MaxConcurrentActivityTaskPollers: 1,
+		MaxConcurrentActivityTaskPollers: 2,
 	})
 	defer w.Stop()
 

@@ -6,7 +6,7 @@ metadata:
     app.kubernetes.io/instance: sample
   name: sample
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: hello-world-worker

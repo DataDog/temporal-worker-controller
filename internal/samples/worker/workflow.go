@@ -10,9 +10,9 @@ import (
 func HelloWorld(ctx workflow.Context) (string, error) {
 	workflow.GetLogger(ctx).Info("HelloWorld workflow started")
 
-	//workflow.SideEffect(ctx, func(ctx workflow.Context) interface{} {
-	//	return nil
-	//})
+	workflow.SideEffect(ctx, func(ctx workflow.Context) interface{} {
+		return nil
+	})
 
 	if err := workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
