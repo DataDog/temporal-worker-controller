@@ -1,6 +1,3 @@
-kubelet:
-  tlsVerify: false
-
 clusterAgent:
   admissionController:
     enabled: true
@@ -20,6 +17,14 @@ datadog:
     processCollection: true
   apm:
     socketEnabled: true
+#  otelCollector:
+#    enabled: true
+  otlp:
+    receiver:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+          enabled: true
   kubeStateMetricsCore:
     labelsAsTags:
       pod:
@@ -29,16 +34,8 @@ datadog:
   tags:
     - "demo:worker-versioning"
     - "env:staging"
-  env:
-    - name: DD_KUBELET_TLS_VERIFY
-      value: "false"
+  kubelet:
+    tlsVerify: false
   orchestratorExplorer:
     customResources:
       - temporal.io/v1alpha1/temporalworkers
-
-otlp:
-  receiver:
-    protocols:
-      grpc:
-        endpoint: 0.0.0.0:4317
-        enabled: true

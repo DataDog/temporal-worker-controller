@@ -212,12 +212,12 @@ install-datadog-agent:
 	helm repo add datadog https://helm.datadoghq.com
 	helm repo update
 	kubectl delete secret datadog-api-key --namespace datadog-agent || true
-	@kubectl create secret generic datadog-api-key --from-literal api-key=$(DD_API_KEY) --namespace datadog-agent
 	@helm upgrade --install --create-namespace datadog-agent datadog/datadog \
 		--kube-context minikube \
 		--namespace datadog-agent \
 		-f hack/datadog-values.yaml \
 		--set datadog.site='$(DD_SITE)'
+	@kubectl create secret generic datadog-api-key --from-literal api-key=$(DD_API_KEY) --namespace datadog-agent
 
 # View workflows filtered by Build ID
 # http://0.0.0.0:8233/namespaces/default/workflows?query=BuildIds+IN+%28%22versioned%3A5578f87d9c%22%29
