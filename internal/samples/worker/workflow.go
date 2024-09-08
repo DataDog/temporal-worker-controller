@@ -8,24 +8,24 @@ import (
 )
 
 func HelloWorld(ctx workflow.Context) (string, error) {
-	//workflow.GetLogger(ctx).Info("HelloWorld workflow started")
+	workflow.GetLogger(ctx).Info("HelloWorld workflow started")
 
 	//workflow.SideEffect(ctx, func(ctx workflow.Context) interface{} {
 	//	return nil
 	//})
 
-	//if err := workflow.ExecuteActivity(
-	//	workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
-	//		ScheduleToCloseTimeout: time.Minute,
-	//	}),
-	//	Sleep, 15,
-	//).Get(ctx, nil); err != nil {
-	//	return "", err
-	//}
+	if err := workflow.ExecuteActivity(
+		workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
+			ScheduleToCloseTimeout: time.Minute,
+		}),
+		Sleep, 5,
+	).Get(ctx, nil); err != nil {
+		return "", err
+	}
 
-	//if err := workflow.Sleep(ctx, 30*time.Second); err != nil {
-	//	return "", err
-	//}
+	if err := workflow.Sleep(ctx, 30*time.Second); err != nil {
+		return "", err
+	}
 
 	return "Hello World!", nil
 }

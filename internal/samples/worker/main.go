@@ -58,7 +58,8 @@ func main() {
 		metricMeter = metricsdk.NewMeterProvider(
 			metricsdk.WithReader(metricsdk.NewPeriodicReader(metricExporter,
 				// Default is 1m. Set to 3s for demonstrative purposes.
-				metricsdk.WithInterval(time.Second))),
+				metricsdk.WithInterval(time.Second),
+			)),
 		).Meter("temporal_sdk")
 	}
 
@@ -73,9 +74,11 @@ func main() {
 			}),
 		},
 		MetricsHandler: opentelemetry.NewMetricsHandler(opentelemetry.MetricsHandlerOptions{
-			Meter:             metricMeter,
-			InitialAttributes: attribute.Set{},
-			OnError:           nil,
+			Meter: metricMeter,
+			InitialAttributes: attribute.NewSet(
+				attribute.String("version", buildID),
+			),
+			OnError: nil,
 		}),
 	})
 	if err != nil {
@@ -86,6 +89,9 @@ func main() {
 	w := worker.New(c, temporalTaskQueue, worker.Options{
 		BuildID:                 buildID,
 		UseBuildIDForVersioning: true,
+		// Be nice to the dev server
+		MaxConcurrentWorkflowTaskPollers: 2,
+		MaxConcurrentActivityTaskPollers: 1,
 	})
 	defer w.Stop()
 
