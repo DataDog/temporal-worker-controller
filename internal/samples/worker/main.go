@@ -5,10 +5,15 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"os"
+	"time"
 
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
+	"go.opentelemetry.io/otel/metric"
+	metricsdk "go.opentelemetry.io/otel/sdk/metric"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/contrib/datadog/tracing"
 	"go.temporal.io/sdk/contrib/opentelemetry"
@@ -46,6 +51,17 @@ func main() {
 		"worker.buildID", buildID,
 	)
 
+	var metricMeter metric.Meter
+	if metricExporter, err := otlpmetricgrpc.New(context.Background()); err != nil {
+		l.Warn("Unable to create OTLP metric exporter", "error", err)
+	} else {
+		metricMeter = metricsdk.NewMeterProvider(
+			metricsdk.WithReader(metricsdk.NewPeriodicReader(metricExporter,
+				// Default is 1m. Set to 3s for demonstrative purposes.
+				metricsdk.WithInterval(time.Second))),
+		).Meter("temporal_sdk")
+	}
+
 	c, err := client.Dial(client.Options{
 		HostPort:  temporalHostPort,
 		Namespace: temporalNamespace,
@@ -57,7 +73,7 @@ func main() {
 			}),
 		},
 		MetricsHandler: opentelemetry.NewMetricsHandler(opentelemetry.MetricsHandlerOptions{
-			Meter:             nil,
+			Meter:             metricMeter,
 			InitialAttributes: attribute.Set{},
 			OnError:           nil,
 		}),
