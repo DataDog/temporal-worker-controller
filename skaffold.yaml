@@ -18,20 +18,13 @@ build:
     gitCommit:
       variant: CommitSha
       ignoreChanges: true
-manifests:
-  kustomize:
-    paths:
-      - config/crd
 profiles:
-  - name: default
-    manifests:
-      kustomize:
-        paths:
-          - config/default
   - name: manager
     manifests:
       kustomize:
         paths:
+          - config/crd
+          - config/default
           - config/manager
           - config/rbac
   - name: demo
