@@ -9,11 +9,11 @@ require (
 	github.com/go-logr/logr v1.4.2
 	github.com/google/go-licenses v0.0.0-20210816172045-3099c18c36e1
 	github.com/google/licenseclassifier v0.0.0-20210722185704-3043a050f148
-	github.com/onsi/ginkgo/v2 v2.19.0
-	github.com/onsi/gomega v1.33.1
+	github.com/onsi/ginkgo/v2 v2.20.1
+	github.com/onsi/gomega v1.34.2
 	github.com/stretchr/testify v1.9.0
 	go.temporal.io/api v1.39.0
-	go.temporal.io/sdk v1.27.0
+	go.temporal.io/sdk v1.29.0
 	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0
 	google.golang.org/protobuf v1.34.2
 	k8s.io/api v0.31.0
@@ -45,7 +45,7 @@ require (
 	github.com/google/gnostic-models v0.6.8 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
-	github.com/google/pprof v0.0.0-20240525223248-4bfdf5a9a2af // indirect
+	github.com/google/pprof v0.0.0-20240827171923-fa2c70bbbfe5 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.22.0 // indirect
@@ -59,6 +59,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
+	github.com/nexus-rpc/sdk-go v0.0.10 // indirect
 	github.com/pborman/uuid v1.2.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
