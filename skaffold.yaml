@@ -19,14 +19,17 @@ build:
       variant: CommitSha
       ignoreChanges: true
 profiles:
-  - name: manager
+  - name: crds
     manifests:
       kustomize:
         paths:
           - config/crd
-          - config/default
-          - config/manager
+  - name: manager
+    manifests:
+      kustomize:
+        paths:
           - config/rbac
+          - config/manager
   - name: demo
     manifests:
       rawYaml:

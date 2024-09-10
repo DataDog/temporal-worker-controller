@@ -70,7 +70,6 @@ list-workflow-build-ids: ## List workflow executions and their build IDs.
 
 .PHONY: build-sample-worker
 build-sample-worker: ## Build the sample worker container image.
-	#eval $(minikube -p minikube docker-env) && $(CONTAINER_TOOL) build --load -t worker-controller/sample-worker:latest -f sample-worker.dockerfile .
 	minikube image build -t worker-controller/sample-worker:latest -f sample-worker.dockerfile . && minikube image load --overwrite=true --daemon=true worker-controller/sample-worker:latest
 
 .PHONY: deploy-sample-worker
@@ -179,7 +178,7 @@ TEMPORAL ?= temporal
 
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v5.0.1
-CONTROLLER_TOOLS_VERSION ?= v0.12.0
+CONTROLLER_TOOLS_VERSION ?= v0.16.2
 
 .PHONY: kustomize
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary. If wrong version is installed, it will be removed before downloading.
@@ -218,6 +217,10 @@ install-datadog-agent:
 		-f hack/datadog-values.yaml \
 		--set datadog.site='$(DD_SITE)'
 	@kubectl create secret generic datadog-api-key --from-literal api-key=$(DD_API_KEY) --namespace datadog-agent
+
+.PHONY: dev
+dev: install
+	skaffold dev --profile manager --profile demo
 
 # View workflows filtered by Build ID
 # http://0.0.0.0:8233/namespaces/default/workflows?query=BuildIds+IN+%28%22versioned%3A5578f87d9c%22%29
