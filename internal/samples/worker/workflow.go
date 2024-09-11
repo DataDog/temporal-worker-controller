@@ -14,7 +14,7 @@ func HelloWorld(ctx workflow.Context) (string, error) {
 		workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
 			ScheduleToCloseTimeout: 30 * time.Second,
 		}),
-		Sleep, 15,
+		Sleep, 60,
 	).Get(ctx, nil); err != nil {
 		return "", err
 	}
