@@ -5,15 +5,18 @@ import (
 
 	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/log"
 )
 
 type ClientPool struct {
 	mux     sync.RWMutex
+	logger  log.Logger
 	clients map[string]client.Client
 }
 
-func New() *ClientPool {
+func New(l log.Logger) *ClientPool {
 	return &ClientPool{
+		logger:  l,
 		clients: make(map[string]client.Client),
 	}
 }
@@ -31,6 +34,7 @@ func (cp *ClientPool) GetWorkflowServiceClient(hostPort string) (workflowservice
 
 func (cp *ClientPool) UpsertClient(hostPort string) (workflowservice.WorkflowServiceClient, error) {
 	c, err := client.Dial(client.Options{
+		Logger:   cp.logger,
 		HostPort: hostPort,
 	})
 	if err != nil {

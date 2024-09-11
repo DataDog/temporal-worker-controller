@@ -24,6 +24,7 @@ metadata:
     app.kubernetes.io/created-by: worker-controller
     app.kubernetes.io/part-of: worker-controller
     app.kubernetes.io/managed-by: kustomize
+    tags.datadoghq.com/service: "temporal-worker-controller"
 spec:
   selector:
     matchLabels:
@@ -32,9 +33,8 @@ spec:
   template:
     metadata:
       annotations:
-        kubectl.kubernetes.io/default-container: main
-        ad.datadoghq.com/tags: '{"service": "temporal-worker-controller"}'
-        ad.datadoghq.com/main.checks: |
+        kubectl.kubernetes.io/default-container: manager
+        ad.datadoghq.com/manager.checks: |
           {
             "openmetrics": {
               "init_config": {},
@@ -49,6 +49,7 @@ spec:
           }
       labels:
         control-plane: controller-manager
+        tags.datadoghq.com/service: "temporal-worker-controller"
     spec:
       # TODO(user): Uncomment the following code to configure the nodeAffinity expression
       # according to the platforms which are supported by your solution.
@@ -80,7 +81,7 @@ spec:
         # seccompProfile:
         #   type: RuntimeDefault
       containers:
-      - name: main
+      - name: manager
         image: controller:latest
         command:
         - /manager

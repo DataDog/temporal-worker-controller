@@ -6,8 +6,10 @@ package main
 
 import (
 	"flag"
+	"log/slog"
 	"os"
 
+	"go.temporal.io/sdk/log"
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -82,9 +84,13 @@ func main() {
 	}
 
 	if err = (&controller.TemporalWorkerReconciler{
-		Client:             mgr.GetClient(),
-		Scheme:             mgr.GetScheme(),
-		TemporalClientPool: clientpool.New(),
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+		TemporalClientPool: clientpool.New(log.NewStructuredLogger(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+			AddSource:   false,
+			Level:       nil,
+			ReplaceAttr: nil,
+		})))),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "TemporalWorker")
 		os.Exit(1)

@@ -3,17 +3,6 @@ kind: Config
 metadata:
   name: worker-controller
 build:
-  artifacts:
-    - image: controller
-      docker:
-        dockerfile: Dockerfile
-    - image: worker
-      context: internal/samples/worker
-      docker:
-        dockerfile: Dockerfile
-        buildArgs:
-          DD_GIT_COMMIT_SHA: "{{ .IMAGE_TAG }}"
-          DD_GIT_REPOSITORY_URL: "github.com/DataDog/temporal-worker-controller"
   tagPolicy:
     gitCommit:
       variant: CommitSha
@@ -25,12 +14,27 @@ profiles:
         paths:
           - config/crd
   - name: manager
+    build:
+      artifacts:
+        - image: controller
+          docker:
+            dockerfile: Dockerfile
     manifests:
       kustomize:
         paths:
+          - config/default
           - config/rbac
           - config/manager
   - name: demo
+    build:
+      artifacts:
+        - image: worker
+          context: internal/samples/worker
+          docker:
+            dockerfile: Dockerfile
+            buildArgs:
+              DD_GIT_COMMIT_SHA: "{{ .IMAGE_TAG }}"
+              DD_GIT_REPOSITORY_URL: "github.com/DataDog/temporal-worker-controller"
     manifests:
       rawYaml:
         - internal/samples/temporal_worker.yaml
