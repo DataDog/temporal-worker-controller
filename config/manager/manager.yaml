@@ -24,21 +24,6 @@ metadata:
     app.kubernetes.io/created-by: worker-controller
     app.kubernetes.io/part-of: worker-controller
     app.kubernetes.io/managed-by: kustomize
-  annotations:
-    ad.datadoghq.com/tags: '{"service": "temporal-worker-controller"}'
-    ad.datadoghq.com/main.checks: |
-      {
-        "openmetrics": {
-          "init_config": {},
-          "instances": [
-            {
-              "openmetrics_endpoint": "http://%%host%%:%%port%% ",
-              "namespace": "temporal_worker_controller",
-              "metrics": [".*"]
-            }
-          ]
-        }
-      }
 spec:
   selector:
     matchLabels:
@@ -47,7 +32,21 @@ spec:
   template:
     metadata:
       annotations:
-        kubectl.kubernetes.io/default-container: manager
+        kubectl.kubernetes.io/default-container: main
+        ad.datadoghq.com/tags: '{"service": "temporal-worker-controller"}'
+        ad.datadoghq.com/main.checks: |
+          {
+            "openmetrics": {
+              "init_config": {},
+              "instances": [
+                {
+                  "openmetrics_endpoint": "http://%%host%%:%%port%% ",
+                  "namespace": "temporal_worker_controller",
+                  "metrics": [".*"]
+                }
+              ]
+            }
+          }
       labels:
         control-plane: controller-manager
     spec:
