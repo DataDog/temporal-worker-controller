@@ -12,9 +12,9 @@ func HelloWorld(ctx workflow.Context) (string, error) {
 
 	if err := workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
-			ScheduleToCloseTimeout: time.Minute,
+			ScheduleToCloseTimeout: 30 * time.Second,
 		}),
-		Sleep, 5,
+		Sleep, 15,
 	).Get(ctx, nil); err != nil {
 		return "", err
 	}
