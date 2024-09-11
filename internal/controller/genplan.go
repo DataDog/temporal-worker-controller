@@ -106,8 +106,9 @@ func (r *TemporalWorkerReconciler) generatePlan(
 		case temporaliov1alpha1.ReachabilityStatusClosedOnly:
 			// TODO(jlegrone): Compute scale based on load? Or percentage of replicas?
 			// Scale down queryable deployments
-			if d.Spec.Replicas != nil && *d.Spec.Replicas != 1 {
-				plan.ScaleDeployments[versionSet.Deployment] = 1
+			const closedOnlyReplicas = 0
+			if d.Spec.Replicas != nil && *d.Spec.Replicas != closedOnlyReplicas {
+				plan.ScaleDeployments[versionSet.Deployment] = closedOnlyReplicas
 			}
 		case temporaliov1alpha1.ReachabilityStatusNotRegistered:
 			// Delete unregistered deployments

@@ -53,6 +53,7 @@ type TemporalWorkerReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.15.0/pkg/reconcile
 func (r *TemporalWorkerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	l := log.FromContext(ctx)
+	l.Info("Running Reconcile loop")
 
 	// Fetch the worker deployment
 	var workerDeploy temporaliov1alpha1.TemporalWorker

@@ -10,6 +10,10 @@ import (
 func HelloWorld(ctx workflow.Context) (string, error) {
 	workflow.GetLogger(ctx).Info("HelloWorld workflow started")
 
+	workflow.GetMetricsHandler(ctx).WithTags(map[string]string{
+		"workflow_type": "HelloWorld",
+	}).Counter("demo_temporal_workflow_start").Inc(1)
+
 	workflow.SideEffect(ctx, func(ctx workflow.Context) interface{} {
 		return nil
 	})
