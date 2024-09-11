@@ -10,12 +10,7 @@ import (
 func HelloWorld(ctx workflow.Context) (string, error) {
 	workflow.GetLogger(ctx).Info("HelloWorld workflow started")
 
-	if err := workflow.ExecuteActivity(
-		workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
-			ScheduleToCloseTimeout: 30 * time.Second,
-		}),
-		Sleep, 60,
-	).Get(ctx, nil); err != nil {
+	if err := workflow.Sleep(ctx, time.Minute); err != nil {
 		return "", err
 	}
 
