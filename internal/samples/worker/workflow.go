@@ -10,7 +10,7 @@ import (
 func HelloWorld(ctx workflow.Context) (string, error) {
 	workflow.GetLogger(ctx).Info("HelloWorld workflow started")
 
-	if err := workflow.Sleep(ctx, 15*time.Second); err != nil {
+	if err := workflow.Sleep(ctx, 30*time.Second); err != nil {
 		return "", err
 	}
 

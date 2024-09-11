@@ -222,5 +222,12 @@ install-datadog-agent:
 dev: install
 	skaffold dev --profile manager --profile demo
 
+.PHONY: demo-deploy
+demo-deploy:
+	git add .
+	git commit -m "demo"
+	git push
+	skaffold run --profile demo
+
 # View workflows filtered by Build ID
 # http://0.0.0.0:8233/namespaces/default/workflows?query=BuildIds+IN+%28%22versioned%3A5578f87d9c%22%29
