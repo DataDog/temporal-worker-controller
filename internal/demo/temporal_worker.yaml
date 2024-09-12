@@ -29,8 +29,8 @@ spec:
     temporalNamespace: "default"
     taskQueue: "hello_world"
   rolloutStrategy:
-    manual: {}
-#    blueGreen: {}
+#    manual: {}
+    blueGreen: {}
 #    progressive:
 #      steps:
 #       - rampPercentage: 10
