@@ -13,13 +13,9 @@ Kubernetes cluster should work if you're able to build and pull the demo worker 
     ```bash
     minikube start
     ```
-1. Install CRDs:
-    ```bash
-   make install
-    ```
 1. Start the controller:
     ```bash
-   make run
+   skaffold dev --profile manager
     ```
 1. Start applying load:
     ```bash
@@ -28,12 +24,12 @@ Kubernetes cluster should work if you're able to build and pull the demo worker 
 1. Inspect versioning rules: http://localhost:8233/namespaces/default/task-queues/hello_world
 1. Deploy worker v1, observe worker versions in terminal:
     ```bash
-   make deploy-sample-worker
+   skaffold run --profile demo
     ```
 1. Upgrade to v2 by editing args in [internal/demo/temporal_worker.yaml](temporal_worker.yaml), and
 redeploy:
     ```bash
-   make deploy-sample-worker
+   skaffold run --profile demo
     ```
    1. Observe multiple worker versions making progress in parallel
    1. Show that v1 eventually scales down
