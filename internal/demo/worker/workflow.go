@@ -74,8 +74,6 @@ func Sleep(ctx context.Context, seconds uint) error {
 //  skaffold run --profile demo
 
 // TODO:
-//  - Remove observability env vars from demo worker
-//  - Create patches for each step of demo
 //  - Move dashboard to demo org
 //  - Commit dashboard json to repo
 //  - Update demo readme
