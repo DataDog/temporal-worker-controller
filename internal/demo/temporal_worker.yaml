@@ -32,13 +32,13 @@ spec:
           image: worker
   rolloutStrategy:
 #    manual: {}
-    blueGreen: {}
-#    progressive:
-#      steps:
-#       - rampPercentage: 10
-#         pauseDuration: 30s
-#       - rampPercentage: 50
-#         pauseDuration: 60s
+#    blueGreen: {}
+    progressive:
+      steps:
+       - rampPercentage: 10
+         pauseDuration: 30s
+       - rampPercentage: 50
+         pauseDuration: 60s
 ---
 apiVersion: temporal.io/v1alpha1
 kind: TemporalConnection
