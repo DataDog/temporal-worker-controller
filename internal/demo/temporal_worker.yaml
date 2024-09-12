@@ -13,17 +13,20 @@ spec:
       app.kubernetes.io/instance: sample
   template:
     spec:
+      metadata:
+        annotations:
+          prometheus.io/scrape: 'true'
       containers:
         - name: main
           image: worker
           imagePullPolicy: Never
-          env:
-            - name: HOST_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.hostIP
-            - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: "http://$(HOST_IP):4317"
+#          env:
+#            - name: HOST_IP
+#              valueFrom:
+#                fieldRef:
+#                  fieldPath: status.hostIP
+#            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+#              value: "http://$(HOST_IP):4317"
   workerOptions:
     connection: dev-server
     temporalNamespace: "default"

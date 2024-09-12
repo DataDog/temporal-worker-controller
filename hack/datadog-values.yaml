@@ -17,8 +17,8 @@ datadog:
     processCollection: true
   apm:
     socketEnabled: true
-#  otelCollector:
-#    enabled: true
+  prometheusScrape:
+    enabled: true
   otlp:
     receiver:
       protocols:

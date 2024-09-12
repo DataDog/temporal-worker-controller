@@ -5,12 +5,12 @@ import (
 	"os"
 	"time"
 
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/exporters/prometheus"
-	"go.opentelemetry.io/otel/sdk/metric"
+	prom "github.com/prometheus/client_golang/prometheus"
+	"github.com/uber-go/tally/v4"
+	"github.com/uber-go/tally/v4/prometheus"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/contrib/datadog/tracing"
-	"go.temporal.io/sdk/contrib/opentelemetry"
+	sdktally "go.temporal.io/sdk/contrib/tally"
 	"go.temporal.io/sdk/interceptor"
 	"go.temporal.io/sdk/log"
 	"go.temporal.io/sdk/workflow"
@@ -24,11 +24,14 @@ func setActivityTimeout(ctx workflow.Context, d time.Duration) workflow.Context 
 }
 
 func newClient(l log.Logger) (client.Client, error) {
-	exporter, err := prometheus.New()
+	promScope, err := newPrometheusScope(l, prometheus.Configuration{
+		ListenAddress: "0.0.0.0:9090",
+		HandlerPath:   "/metrics",
+		TimerType:     "histogram",
+	})
 	if err != nil {
 		return nil, err
 	}
-	//otel.SetMeterProvider(metric.NewMeterProvider(metric.WithReader(exporter)))
 
 	return client.Dial(client.Options{
 		HostPort:  temporalHostPort,
@@ -40,13 +43,7 @@ func newClient(l log.Logger) (client.Client, error) {
 				DisableQueryTracing:  false,
 			}),
 		},
-		MetricsHandler: opentelemetry.NewMetricsHandler(opentelemetry.MetricsHandlerOptions{
-			Meter: metric.NewMeterProvider(metric.WithReader(exporter)).Meter("temporal-sdk-go"),
-			InitialAttributes: attribute.NewSet(
-				attribute.String("version", buildID),
-			),
-			OnError: nil,
-		}),
+		MetricsHandler: sdktally.NewMetricsHandler(promScope),
 	})
 }
 
@@ -62,4 +59,28 @@ func newLoggerAndTracer() (l log.Logger, stopTracerFunc func()) {
 		ReplaceAttr: nil,
 	})))
 	return l, tracer.Stop
+}
+
+func newPrometheusScope(l log.Logger, c prometheus.Configuration) (tally.Scope, error) {
+	reporter, err := c.NewReporter(
+		prometheus.ConfigurationOptions{
+			Registry: prom.NewRegistry(),
+			OnError: func(err error) {
+				l.Error("Error in prometheus reporter", "error", err)
+			},
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	scopeOpts := tally.ScopeOptions{
+		CachedReporter:  reporter,
+		Separator:       prometheus.DefaultSeparator,
+		SanitizeOptions: &sdktally.PrometheusSanitizeOptions,
+		Prefix:          "temporal_samples",
+	}
+	scope, _ := tally.NewRootScope(scopeOpts, time.Second)
+	scope = sdktally.NewPrometheusNamingScope(scope)
+
+	return scope, nil
 }

@@ -5,12 +5,15 @@ go 1.22.5
 //replace go.opentelemetry.io/otel/metric => go.opentelemetry.io/otel/metric/registry v0.23.0
 
 require (
+	github.com/prometheus/client_golang v1.20.3
+	github.com/uber-go/tally/v4 v4.1.16
 	go.opentelemetry.io/otel v1.30.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.52.0
 	go.opentelemetry.io/otel/sdk/metric v1.30.0
 	go.temporal.io/sdk v1.29.1
 	go.temporal.io/sdk/contrib/datadog v0.3.0
 	go.temporal.io/sdk/contrib/opentelemetry v0.6.0
+	go.temporal.io/sdk/contrib/tally v0.2.0
 	gopkg.in/DataDog/dd-trace-go.v1 v1.67.1
 )
 
@@ -36,6 +39,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.22.0 // indirect
+	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/nexus-rpc/sdk-go v0.0.10 // indirect
 	github.com/outcaste-io/ristretto v0.2.3 // indirect
@@ -43,7 +47,6 @@ require (
 	github.com/philhofer/fwd v1.1.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/prometheus/client_golang v1.20.3 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.59.1 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
@@ -52,6 +55,7 @@ require (
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/stretchr/testify v1.9.0 // indirect
 	github.com/tinylib/msgp v1.1.8 // indirect
+	github.com/twmb/murmur3 v1.1.5 // indirect
 	go.opentelemetry.io/otel/metric v1.30.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.30.0 // indirect
 	go.opentelemetry.io/otel/trace v1.30.0 // indirect
