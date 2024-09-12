@@ -36,13 +36,13 @@ spec:
     taskQueue: "hello_world"
   rolloutStrategy:
 #    manual: {}
-    blueGreen: {}
-#    progressive:
-#      steps:
-#       - rampPercentage: 10
-#         pauseDuration: 30s
-#       - rampPercentage: 50
-#         pauseDuration: 30s
+#    blueGreen: {}
+    progressive:
+      steps:
+       - rampPercentage: 10
+         pauseDuration: 30s
+       - rampPercentage: 50
+         pauseDuration: 30s
 ---
 apiVersion: temporal.io/v1alpha1
 kind: TemporalConnection
