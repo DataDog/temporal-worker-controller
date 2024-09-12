@@ -29,14 +29,14 @@ func HelloWorld(ctx workflow.Context) (string, error) {
 	}
 
 	// Return the greeting
-	greeting := fmt.Sprintf("Hello %s!!", subject)
+	greeting := fmt.Sprintf("Hello %s", subject)
 
 	logger.Info("Sending greeting", "greeting", greeting)
 	return greeting, nil
 }
 
 func GetSubject(ctx context.Context) (string, error) {
-	return "Replay", nil
+	return "World", nil
 }
 
 func Sleep(ctx context.Context, seconds uint) error {
