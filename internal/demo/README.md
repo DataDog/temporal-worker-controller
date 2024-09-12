@@ -26,9 +26,9 @@ Kubernetes cluster should work if you're able to build and pull the demo worker 
     ```bash
    skaffold run --profile demo
     ```
-1. Upgrade to v2 by editing args in [internal/demo/temporal_worker.yaml](temporal_worker.yaml), and
-redeploy:
+1. Make a non-replay-safe change and redeploy:
     ```bash
+   git apply internal/demo/changes/no-version-gate.patch
    skaffold run --profile demo
     ```
    1. Observe multiple worker versions making progress in parallel
