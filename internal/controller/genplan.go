@@ -282,17 +282,18 @@ func newDeploymentWithoutOwnerRef(
 	buildID string,
 	connection temporaliov1alpha1.TemporalConnectionSpec,
 ) *appsv1.Deployment {
-	labels := map[string]string{}
+	selectorLabels := map[string]string{}
 	// Merge labels from TemporalWorker with build ID
 	for k, v := range spec.Selector.MatchLabels {
-		labels[k] = v
+		selectorLabels[k] = v
 	}
-	labels[buildIDLabel] = buildID
+	selectorLabels[buildIDLabel] = buildID
+
 	// Set pod labels
 	if spec.Template.Labels == nil {
-		spec.Template.Labels = labels
+		spec.Template.Labels = selectorLabels
 	} else {
-		for k, v := range labels {
+		for k, v := range selectorLabels {
 			spec.Template.Labels[k] = v
 		}
 	}
@@ -326,7 +327,8 @@ func newDeploymentWithoutOwnerRef(
 			Name:                       fmt.Sprintf("%s-%s", objectMeta.Name, buildID),
 			Namespace:                  objectMeta.Namespace,
 			DeletionGracePeriodSeconds: nil,
-			Labels:                     labels,
+			Labels:                     spec.Template.Labels,
+			Annotations:                spec.Template.Annotations,
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         typeMeta.APIVersion,
 				Kind:               typeMeta.Kind,
@@ -342,7 +344,7 @@ func newDeploymentWithoutOwnerRef(
 		Spec: appsv1.DeploymentSpec{
 			Replicas: spec.Replicas,
 			Selector: &metav1.LabelSelector{
-				MatchLabels: labels,
+				MatchLabels: selectorLabels,
 			},
 			Template:        spec.Template,
 			MinReadySeconds: spec.MinReadySeconds,
