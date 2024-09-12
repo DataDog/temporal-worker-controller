@@ -12,10 +12,10 @@ spec:
       app.kubernetes.io/name: hello-world-worker
       app.kubernetes.io/instance: sample
   template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: 'true'
     spec:
-      metadata:
-        annotations:
-          prometheus.io/scrape: 'true'
       containers:
         - name: main
           image: worker
