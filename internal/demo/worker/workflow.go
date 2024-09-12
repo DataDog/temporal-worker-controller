@@ -19,7 +19,7 @@ func HelloWorld(ctx workflow.Context) (string, error) {
 	}
 
 	// Sleep for a while
-	if err := workflow.ExecuteActivity(ctx, Sleep, 30).Get(ctx, nil); err != nil {
+	if err := workflow.ExecuteActivity(ctx, Sleep, 120).Get(ctx, nil); err != nil {
 		return "", err
 	}
 
