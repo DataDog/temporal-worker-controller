@@ -45,4 +45,3 @@ resourceSelector:
   allow:
     - groupKind: "TemporalWorker.temporal.io"
       image: [".*"]
-      labels: [".*"]
