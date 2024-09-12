@@ -14,19 +14,23 @@ spec:
   template:
     metadata:
       annotations:
-        prometheus.io/scrape: "true"
+        ad.datadoghq.com/main.checks: |
+          {
+            "openmetrics": {
+              "init_config": {},
+              "instances": [
+                {
+                  "openmetrics_endpoint": "http://%%host%%:9090/metrics",
+                  "metrics": [".*"]
+                }
+              ]
+            }
+          }
     spec:
       containers:
         - name: main
           image: worker
           imagePullPolicy: Never
-#          env:
-#            - name: HOST_IP
-#              valueFrom:
-#                fieldRef:
-#                  fieldPath: status.hostIP
-#            - name: OTEL_EXPORTER_OTLP_ENDPOINT
-#              value: "http://$(HOST_IP):4317"
   workerOptions:
     connection: dev-server
     temporalNamespace: "default"
