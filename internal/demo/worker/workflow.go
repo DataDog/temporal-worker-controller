@@ -24,12 +24,12 @@ func HelloWorld(ctx workflow.Context) (string, error) {
 	//if err := workflow.ExecuteActivity(ctx, Sleep, 30).Get(ctx, nil); err != nil {
 	//	return "", err
 	//}
-	if err := workflow.Sleep(ctx, 2*time.Minute); err != nil {
+	if err := workflow.Sleep(ctx, time.Minute); err != nil {
 		return "", err
 	}
 
 	// Return the greeting
-	greeting := fmt.Sprintf("Hello %s!!", subject)
+	greeting := fmt.Sprintf("Hello %s!", subject)
 
 	logger.Info("Sending greeting", "greeting", greeting)
 	return greeting, nil
