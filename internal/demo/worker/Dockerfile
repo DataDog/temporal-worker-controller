@@ -3,7 +3,7 @@ FROM golang:1.22 as builder
 ARG TARGETOS
 ARG TARGETARCH
 
-WORKDIR /internal/samples/worker
+WORKDIR /internal/demo/worker
 # Copy the Go Modules manifests
 COPY go.mod go.mod
 COPY go.sum go.sum
@@ -30,7 +30,7 @@ ENV DD_GIT_REPOSITORY_URL=${DD_GIT_REPOSITORY_URL}
 ENV DD_GIT_COMMIT_SHA=${DD_GIT_COMMIT_SHA}
 ENV DD_SERVICE=hello-world-worker
 WORKDIR /
-COPY --from=builder /internal/samples/worker/worker .
+COPY --from=builder /internal/demo/worker/worker .
 USER 65532:65532
 
 ENTRYPOINT ["/worker"]

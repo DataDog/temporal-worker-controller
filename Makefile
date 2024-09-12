@@ -74,7 +74,7 @@ build-sample-worker: ## Build the sample worker container image.
 
 .PHONY: deploy-sample-worker
 deploy-sample-worker: build-sample-worker ## Deploy the sample worker to the cluster.
-	$(KUBECTL) apply -f internal/samples/temporal_worker.yaml
+	$(KUBECTL) apply -f internal/demo/temporal_worker.yaml
 
 .PHONY: start-temporal-server
 start-temporal-server: ## Start an ephemeral Temporal server with versioning APIs enabled.

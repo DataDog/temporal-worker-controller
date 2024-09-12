@@ -1,8 +1,8 @@
 
  ## Demo
  
-This demo assumes you have [minikube](https://minikube.sigs.k8s.io/docs/) installed, but any Kubernetes cluster should
-should work if you're able to build and pull the sample worker image.
+This demo assumes you have [skaffold](https://skaffold.dev/docs/install/) and [minikube](https://minikube.sigs.k8s.io/docs/) and installed, but any
+Kubernetes cluster should work if you're able to build and pull the demo worker image.
 
 1. Start local Temporal server:
     ```bash
@@ -30,7 +30,7 @@ should work if you're able to build and pull the sample worker image.
     ```bash
    make deploy-sample-worker
     ```
-1. Upgrade to v2 by editing args in [internal/samples/temporal_worker.yaml](internal/samples/temporal_worker.yaml), and
+1. Upgrade to v2 by editing args in [internal/demo/temporal_worker.yaml](temporal_worker.yaml), and
 redeploy:
     ```bash
    make deploy-sample-worker

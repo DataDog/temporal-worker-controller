@@ -29,7 +29,7 @@ profiles:
     build:
       artifacts:
         - image: worker
-          context: internal/samples/worker
+          context: internal/demo/worker
           docker:
             dockerfile: Dockerfile
             buildArgs:
@@ -37,7 +37,7 @@ profiles:
               DD_GIT_REPOSITORY_URL: "github.com/DataDog/temporal-worker-controller"
     manifests:
       rawYaml:
-        - internal/samples/temporal_worker.yaml
+        - internal/demo/temporal_worker.yaml
 deploy:
   kubeContext: minikube
   kubectl: {}
