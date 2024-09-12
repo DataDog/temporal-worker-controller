@@ -29,7 +29,7 @@ profiles:
     build:
       artifacts:
         - image: worker
-          context: internal/demo/worker
+          context: internal/demo
           docker:
             dockerfile: Dockerfile
             buildArgs:
