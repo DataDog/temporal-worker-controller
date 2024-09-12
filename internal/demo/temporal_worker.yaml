@@ -30,7 +30,6 @@ spec:
       containers:
         - name: main
           image: worker
-          imagePullPolicy: Never
   workerOptions:
     connection: dev-server
     temporalNamespace: "default"
