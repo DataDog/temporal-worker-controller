@@ -209,13 +209,15 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, l logr.Lo
 		Namespace: workerDeploy.Spec.WorkerOptions.TemporalNamespace,
 		TaskQueue: &taskqueue.TaskQueue{
 			Name: workerDeploy.Spec.WorkerOptions.TaskQueue,
-			//Kind: 0, // defaults to "normal"
+			Kind: enums.TASK_QUEUE_KIND_NORMAL,
 		},
 		Versions: &taskqueue.TaskQueueVersionSelection{
 			// Including deployed build IDs means that we'll observe the "UnReachable" status even for versions
 			// that are no longer known to the server. Not including this option means we can see the "NotRegistered"
 			// status and trigger deletion rather than scaling to zero.
-			BuildIds:  deployedBuildIDs,
+			//
+			// This can also lead to the following error: Too many build ids queried at once with ReportTaskReachability==true, limit: 5
+			//BuildIds:  deployedBuildIDs,
 			AllActive: true,
 		},
 		ReportStats:            true,
