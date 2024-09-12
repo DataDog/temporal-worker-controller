@@ -28,6 +28,7 @@ func newClient(l log.Logger) (client.Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	//otel.SetMeterProvider(metric.NewMeterProvider(metric.WithReader(exporter)))
 
 	return client.Dial(client.Options{
 		HostPort:  temporalHostPort,
@@ -40,7 +41,7 @@ func newClient(l log.Logger) (client.Client, error) {
 			}),
 		},
 		MetricsHandler: opentelemetry.NewMetricsHandler(opentelemetry.MetricsHandlerOptions{
-			Meter: metric.NewMeterProvider(metric.WithReader(exporter.Reader)),
+			Meter: metric.NewMeterProvider(metric.WithReader(exporter)).Meter("temporal-sdk-go"),
 			InitialAttributes: attribute.NewSet(
 				attribute.String("version", buildID),
 			),
