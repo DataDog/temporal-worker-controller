@@ -31,26 +31,32 @@ var (
 )
 
 func main() {
-	tracer.Start(
-		tracer.WithUniversalVersion(buildID),
-		tracer.WithLogStartup(false),
-		tracer.WithSampler(tracer.NewAllSampler()),
-	)
-	defer tracer.Stop()
+	l, stopTracer := newLoggerAndTracer()
+	defer stopTracer()
 
-	l := log.NewStructuredLogger(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		AddSource:   true,
-		Level:       slog.LevelDebug,
-		ReplaceAttr: nil,
-	})))
+	c, err := newClient(l)
+	if err != nil {
+		l.Error("Unable to create Temporal client", "error", err)
+		os.Exit(1)
+	}
 
-	l.Info("Worker config",
-		"temporal.hostport", temporalHostPort,
-		"temporal.namespace", temporalNamespace,
-		"temporal.taskqueue", temporalTaskQueue,
-		"worker.buildID", buildID,
-	)
+	w := worker.New(c, temporalTaskQueue, worker.Options{
+		BuildID: buildID,
+		//UseBuildIDForVersioning: true,
+	})
+	defer w.Stop()
 
+	// Register activities and workflows
+	w.RegisterWorkflow(HelloWorld)
+	w.RegisterActivity(Sleep)
+
+	if err := w.Run(worker.InterruptCh()); err != nil {
+		l.Error("Unable to start worker", "error", err)
+		os.Exit(1)
+	}
+}
+
+func newClient(l log.Logger) (client.Client, error) {
 	var metricMeter metric.Meter
 	if metricExporter, err := otlpmetricgrpc.New(context.Background()); err != nil {
 		l.Warn("Unable to create OTLP metric exporter", "error", err)
@@ -63,7 +69,7 @@ func main() {
 		).Meter("temporal_sdk")
 	}
 
-	c, err := client.Dial(client.Options{
+	return client.Dial(client.Options{
 		HostPort:  temporalHostPort,
 		Namespace: temporalNamespace,
 		Logger:    l,
@@ -81,26 +87,18 @@ func main() {
 			OnError: nil,
 		}),
 	})
-	if err != nil {
-		l.Error("Unable to create Temporal client", "error", err)
-		os.Exit(1)
-	}
+}
 
-	w := worker.New(c, temporalTaskQueue, worker.Options{
-		BuildID:                 buildID,
-		UseBuildIDForVersioning: true,
-		// Be nice to the dev server
-		MaxConcurrentWorkflowTaskPollers: 2,
-		MaxConcurrentActivityTaskPollers: 2,
-	})
-	defer w.Stop()
-
-	// Register activities and workflows
-	w.RegisterWorkflow(HelloWorld)
-	w.RegisterActivity(Sleep)
-
-	if err := w.Run(worker.InterruptCh()); err != nil {
-		l.Error("Unable to start worker", "error", err)
-		os.Exit(1)
-	}
+func newLoggerAndTracer() (l log.Logger, stopTracerFunc func()) {
+	tracer.Start(
+		tracer.WithUniversalVersion(buildID),
+		tracer.WithLogStartup(false),
+		tracer.WithSampler(tracer.NewAllSampler()),
+	)
+	l = log.NewStructuredLogger(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		AddSource:   true,
+		Level:       slog.LevelDebug,
+		ReplaceAttr: nil,
+	})))
+	return l, tracer.Stop
 }
