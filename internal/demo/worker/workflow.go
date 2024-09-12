@@ -24,7 +24,7 @@ func HelloWorld(ctx workflow.Context) (string, error) {
 	//if err := workflow.ExecuteActivity(ctx, Sleep, 30).Get(ctx, nil); err != nil {
 	//	return "", err
 	//}
-	if err := workflow.Sleep(ctx, 10*time.Second); err != nil {
+	if err := workflow.Sleep(ctx, 30*time.Second); err != nil {
 		return "", err
 	}
 

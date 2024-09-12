@@ -42,7 +42,7 @@ spec:
        - rampPercentage: 10
          pauseDuration: 30s
        - rampPercentage: 50
-         pauseDuration: 30s
+         pauseDuration: 60s
 ---
 apiVersion: temporal.io/v1alpha1
 kind: TemporalConnection
