@@ -20,13 +20,13 @@ func HelloWorld(ctx workflow.Context) (string, error) {
 		return "", err
 	}
 
-	// Sleep for a while
-	//if err := workflow.ExecuteActivity(ctx, Sleep, 30).Get(ctx, nil); err != nil {
-	//	return "", err
-	//}
-	if err := workflow.Sleep(ctx, 30*time.Second); err != nil {
+	//Sleep for a while
+	if err := workflow.ExecuteActivity(ctx, Sleep, 30).Get(ctx, nil); err != nil {
 		return "", err
 	}
+	//if err := workflow.Sleep(ctx, 30*time.Second); err != nil {
+	//	return "", err
+	//}
 
 	// Return the greeting
 	greeting := fmt.Sprintf("Hello %s!!", subject)
