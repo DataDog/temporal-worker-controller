@@ -6,11 +6,11 @@ metadata:
     app.kubernetes.io/instance: sample
   name: sample
 spec:
+  workerOptions:
+    connection: dev-server
+    temporalNamespace: "default"
+    taskQueue: "hello_world"
   replicas: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: hello-world-worker
-      app.kubernetes.io/instance: sample
   template:
     metadata:
       annotations:
@@ -30,10 +30,6 @@ spec:
       containers:
         - name: main
           image: worker
-  workerOptions:
-    connection: dev-server
-    temporalNamespace: "default"
-    taskQueue: "hello_world"
   rolloutStrategy:
 #    manual: {}
     blueGreen: {}
