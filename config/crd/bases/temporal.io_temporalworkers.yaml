@@ -3725,7 +3725,6 @@ spec:
                 type: object
             required:
             - rolloutStrategy
-            - selector
             - template
             - workerOptions
             type: object
