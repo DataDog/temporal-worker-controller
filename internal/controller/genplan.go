@@ -312,7 +312,7 @@ func newDeploymentWithoutOwnerRef(
 				Value: spec.WorkerOptions.TaskQueue,
 			},
 			v1.EnvVar{
-				Name:  "TEMPORAL_BUILD_ID",
+				Name:  "WORKER_BUILD_ID",
 				Value: buildID,
 			},
 		)

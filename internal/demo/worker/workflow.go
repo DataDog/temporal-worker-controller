@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"go.temporal.io/sdk/workflow"
@@ -10,11 +11,20 @@ import (
 func HelloWorld(ctx workflow.Context) (string, error) {
 	workflow.GetLogger(ctx).Info("HelloWorld workflow started")
 
+	var greeting string
+	if err := workflow.ExecuteActivity(timeout(ctx, time.Minute), GetGreeting).Get(ctx, &greeting); err != nil {
+		return "", err
+	}
+
 	if err := workflow.Sleep(ctx, 2*time.Minute); err != nil {
 		return "", err
 	}
 
-	return "Hello World!", nil
+	return fmt.Sprintf("%s %s", greeting, ""), nil
+}
+
+func GetGreeting(ctx context.Context) (string, error) {
+	return "Hello", nil
 }
 
 func Sleep(ctx context.Context, seconds uint) error {
