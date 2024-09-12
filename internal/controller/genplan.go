@@ -284,8 +284,10 @@ func newDeploymentWithoutOwnerRef(
 ) *appsv1.Deployment {
 	selectorLabels := map[string]string{}
 	// Merge labels from TemporalWorker with build ID
-	for k, v := range spec.Selector.MatchLabels {
-		selectorLabels[k] = v
+	if spec.Selector != nil {
+		for k, v := range spec.Selector.MatchLabels {
+			selectorLabels[k] = v
+		}
 	}
 	selectorLabels[buildIDLabel] = buildID
 
