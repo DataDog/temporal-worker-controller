@@ -9,8 +9,10 @@ import (
 )
 
 func HelloWorld(ctx workflow.Context) (string, error) {
-	workflow.GetLogger(ctx).Info("HelloWorld workflow started")
 	ctx = setActivityTimeout(ctx, time.Minute)
+	logger := workflow.GetLogger(ctx)
+
+	logger.Info("HelloWorld workflow started")
 
 	// Compute a subject
 	var subject string
@@ -24,7 +26,10 @@ func HelloWorld(ctx workflow.Context) (string, error) {
 	}
 
 	// Return the greeting
-	return fmt.Sprintf("Hello %s!!!!", subject), nil
+	greeting := fmt.Sprintf("Hello %s!!!!", subject)
+
+	logger.Info("Sending greeting", "greeting", greeting)
+	return greeting, nil
 }
 
 func GetSubject(ctx context.Context) (string, error) {
