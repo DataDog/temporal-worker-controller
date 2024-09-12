@@ -28,14 +28,14 @@ func main() {
 	}
 
 	w := worker.New(c, temporalTaskQueue, worker.Options{
-		BuildID: buildID,
-		//UseBuildIDForVersioning: true,
+		BuildID:                 buildID,
+		UseBuildIDForVersioning: true,
 	})
 	defer w.Stop()
 
 	// Register activities and workflows
 	w.RegisterWorkflow(HelloWorld)
-	w.RegisterActivity(GetGreeting)
+	w.RegisterActivity(GetSubject)
 	w.RegisterActivity(Sleep)
 
 	if err := w.Run(worker.InterruptCh()); err != nil {

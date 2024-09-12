@@ -19,7 +19,7 @@ import (
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
-func timeout(ctx workflow.Context, d time.Duration) workflow.Context {
+func setActivityTimeout(ctx workflow.Context, d time.Duration) workflow.Context {
 	return workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
 		ScheduleToCloseTimeout: d,
 	})

@@ -10,21 +10,25 @@ import (
 
 func HelloWorld(ctx workflow.Context) (string, error) {
 	workflow.GetLogger(ctx).Info("HelloWorld workflow started")
+	ctx = setActivityTimeout(ctx, time.Minute)
 
-	var greeting string
-	if err := workflow.ExecuteActivity(timeout(ctx, time.Minute), GetGreeting).Get(ctx, &greeting); err != nil {
+	// Compute a subject
+	var subject string
+	if err := workflow.ExecuteActivity(ctx, GetSubject).Get(ctx, &subject); err != nil {
 		return "", err
 	}
 
-	if err := workflow.Sleep(ctx, 2*time.Minute); err != nil {
+	// Sleep for a while
+	if err := workflow.ExecuteActivity(ctx, Sleep, 30).Get(ctx, nil); err != nil {
 		return "", err
 	}
 
-	return fmt.Sprintf("%s %s", greeting, ""), nil
+	// Return the greeting
+	return fmt.Sprintf("Hello %s", subject), nil
 }
 
-func GetGreeting(ctx context.Context) (string, error) {
-	return "Hello", nil
+func GetSubject(ctx context.Context) (string, error) {
+	return "World", nil
 }
 
 func Sleep(ctx context.Context, seconds uint) error {
