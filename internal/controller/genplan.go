@@ -327,7 +327,7 @@ func newDeploymentWithoutOwnerRef(
 			Name:                       fmt.Sprintf("%s-%s", objectMeta.Name, buildID),
 			Namespace:                  objectMeta.Namespace,
 			DeletionGracePeriodSeconds: nil,
-			Labels:                     spec.Template.Labels,
+			Labels:                     selectorLabels,
 			Annotations:                spec.Template.Annotations,
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         typeMeta.APIVersion,
