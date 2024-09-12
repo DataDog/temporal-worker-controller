@@ -64,3 +64,18 @@ func Sleep(ctx context.Context, seconds uint) error {
 //			return "", err
 //		}
 //	}
+
+// Create diff files like
+//  git diff > v1_enable_versioning.patch
+//
+// Run through each step of the demo with a script like
+//  git apply v1_enable_versioning.patch
+//  git add . && git commit -m "enable_versioning" && git push
+//  skaffold run --profile demo
+
+// TODO:
+//  - Remove observability env vars from demo worker
+//  - Create patches for each step of demo
+//  - Move dashboard to demo org
+//  - Commit dashboard json to repo
+//  - Update demo readme
