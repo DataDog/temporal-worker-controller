@@ -1,18 +1,13 @@
 package main
 
 import (
-	"context"
 	"log/slog"
 	"os"
 	"time"
 
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
-	"go.opentelemetry.io/otel/metric"
-	metricsdk "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/exporters/metric/prometheus"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/contrib/datadog/tracing"
-	"go.temporal.io/sdk/contrib/opentelemetry"
 	"go.temporal.io/sdk/interceptor"
 	"go.temporal.io/sdk/log"
 	"go.temporal.io/sdk/workflow"
@@ -26,17 +21,19 @@ func setActivityTimeout(ctx workflow.Context, d time.Duration) workflow.Context 
 }
 
 func newClient(l log.Logger) (client.Client, error) {
-	var metricMeter metric.Meter
-	if metricExporter, err := otlpmetricgrpc.New(context.Background()); err != nil {
-		l.Warn("Unable to create OTLP metric exporter", "error", err)
-	} else {
-		metricMeter = metricsdk.NewMeterProvider(
-			metricsdk.WithReader(metricsdk.NewPeriodicReader(metricExporter,
-				// Default is 1m. Set to 3s for demonstrative purposes.
-				metricsdk.WithInterval(time.Second),
-			)),
-		).Meter("temporal_sdk")
-	}
+	//var metricMeter metric.Meter
+	//if metricExporter, err := otlpmetricgrpc.New(context.Background()); err != nil {
+	//	l.Warn("Unable to create OTLP metric exporter", "error", err)
+	//} else {
+	//	metricMeter = metricsdk.NewMeterProvider(
+	//		metricsdk.WithReader(metricsdk.NewPeriodicReader(metricExporter,
+	//			// Default is 1m. Set to 3s for demonstrative purposes.
+	//			metricsdk.WithInterval(time.Second),
+	//		)),
+	//	).Meter("temporal_sdk")
+	//}
+
+	prometheus.New(prometheus.Config{}, nil)
 
 	return client.Dial(client.Options{
 		HostPort:  temporalHostPort,
@@ -48,13 +45,13 @@ func newClient(l log.Logger) (client.Client, error) {
 				DisableQueryTracing:  false,
 			}),
 		},
-		MetricsHandler: opentelemetry.NewMetricsHandler(opentelemetry.MetricsHandlerOptions{
-			Meter: metricMeter,
-			InitialAttributes: attribute.NewSet(
-				attribute.String("version", buildID),
-			),
-			OnError: nil,
-		}),
+		//MetricsHandler: opentelemetry.NewMetricsHandler(opentelemetry.MetricsHandlerOptions{
+		//	Meter: metricMeter,
+		//	InitialAttributes: attribute.NewSet(
+		//		attribute.String("version", buildID),
+		//	),
+		//	OnError: nil,
+		//}),
 	})
 }
 
