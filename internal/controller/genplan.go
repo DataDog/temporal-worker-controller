@@ -185,6 +185,7 @@ func getVersionConfigDiff(rules *workflowservice.GetWorkerVersioningRulesRespons
 	}
 
 	// Don't make updates if build id already the default or has correct ramp.
+	// TODO(jlegrone): Get ramp values from status instead of rules
 	first := rules.GetAssignmentRules()[0].GetRule()
 	if first.GetTargetBuildId() == vcfg.buildID {
 		ramp := first.GetPercentageRamp()

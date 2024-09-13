@@ -176,3 +176,7 @@ func TestGeneratePlan(t *testing.T) {
 		})
 	}
 }
+
+func TestConvertFloatToUint(t *testing.T) {
+	assert.Equal(t, uint8(1), convertFloatToUint(1.1))
+}

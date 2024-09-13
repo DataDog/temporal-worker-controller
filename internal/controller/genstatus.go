@@ -95,8 +95,12 @@ func (c *versionedDeploymentCollection) addDeployment(buildID string, d *appsv1.
 }
 
 func (c *versionedDeploymentCollection) addAssignmentRule(rule *taskqueue.BuildIdAssignmentRule) {
+	// Skip updating existing values (only the first one should take effect)
+	if _, ok := c.rampPercentages[rule.GetTargetBuildId()]; ok {
+		return
+	}
 	if ramp := rule.GetPercentageRamp(); ramp != nil {
-		c.rampPercentages[rule.GetTargetBuildId()] = uint8(math.Round(float64(ramp.GetRampPercentage())))
+		c.rampPercentages[rule.GetTargetBuildId()] = convertFloatToUint(ramp.GetRampPercentage())
 	}
 }
 
@@ -253,4 +257,8 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, l logr.Lo
 		DeprecatedVersions:   deprecatedVersions,
 		VersionConflictToken: rules.GetConflictToken(),
 	}, rules, nil
+}
+
+func convertFloatToUint(val float32) uint8 {
+	return uint8(math.Round(float64(val)))
 }
