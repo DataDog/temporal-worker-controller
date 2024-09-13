@@ -1,15 +1,22 @@
 apiVersion: temporal.io/v1alpha1
 kind: TemporalWorker
 metadata:
+  name: sample
   labels:
     app.kubernetes.io/name: hello-world-worker
     app.kubernetes.io/instance: sample
-  name: sample
 spec:
   workerOptions:
     connection: dev-server
     temporalNamespace: "default"
     taskQueue: "hello_world"
+  rolloutStrategy:
+    progressive:
+      steps:
+       - rampPercentage: 10
+         pauseDuration: 30s
+       - rampPercentage: 50
+         pauseDuration: 60s
   replicas: 1
   template:
     metadata:
@@ -30,15 +37,6 @@ spec:
       containers:
         - name: main
           image: worker
-  rolloutStrategy:
-#    manual: {}
-#    blueGreen: {}
-    progressive:
-      steps:
-       - rampPercentage: 10
-         pauseDuration: 30s
-       - rampPercentage: 50
-         pauseDuration: 60s
 ---
 apiVersion: temporal.io/v1alpha1
 kind: TemporalConnection

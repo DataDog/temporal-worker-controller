@@ -2,8 +2,6 @@ module github.com/DataDog/temporal-worker-controller/internal/demo
 
 go 1.22.5
 
-//replace go.opentelemetry.io/otel/metric => go.opentelemetry.io/otel/metric/registry v0.23.0
-
 require (
 	github.com/prometheus/client_golang v1.20.3
 	github.com/uber-go/tally/v4 v4.1.16
