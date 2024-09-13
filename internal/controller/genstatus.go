@@ -236,7 +236,6 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, l logr.Lo
 		return nil, nil, fmt.Errorf("unable to describe task queue: %w", err)
 	}
 	for buildID, info := range tq.GetVersionsInfo() {
-		//l.Info("Got build id info", "buildID", buildID, "info", info.GetTaskReachability().String(), "stats", info.GetTypesInfo()[0].GetStats())
 		if err := versions.addReachability(buildID, info); err != nil {
 			return nil, nil, fmt.Errorf("error computing reachability for build ID %q: %w", buildID, err)
 		}
@@ -251,9 +250,25 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, l logr.Lo
 		deprecatedVersions = append(deprecatedVersions, versions.getVersionedDeployment(buildID))
 	}
 
+	var (
+		defaultVersion = versions.getVersionedDeployment(defaultBuildID)
+		targetVersion  = versions.getVersionedDeployment(desiredBuildID)
+	)
+
+	// Ugly hack to set ramp percentages (not quite correctly) for now
+	for _, d := range deprecatedVersions {
+		d.RampPercentage = nil
+	}
+	if defaultVersion != nil {
+		defaultVersion.RampPercentage = nil
+		if defaultVersion.BuildID == targetVersion.BuildID {
+			targetVersion.RampPercentage = nil
+		}
+	}
+
 	return &temporaliov1alpha1.TemporalWorkerStatus{
-		TargetVersion:        versions.getVersionedDeployment(desiredBuildID),
-		DefaultVersion:       versions.getVersionedDeployment(defaultBuildID),
+		DefaultVersion:       defaultVersion,
+		TargetVersion:        targetVersion,
 		DeprecatedVersions:   deprecatedVersions,
 		VersionConflictToken: rules.GetConflictToken(),
 	}, rules, nil
