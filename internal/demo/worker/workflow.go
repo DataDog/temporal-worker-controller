@@ -14,7 +14,7 @@ import (
 
 func HelloWorld(ctx workflow.Context) (string, error) {
 	workflow.GetLogger(ctx).Info("HelloWorld workflow started")
-	ctx = setActivityTimeout(ctx, time.Minute)
+	ctx = setActivityTimeout(ctx, 5*time.Minute)
 
 	// Compute a subject
 	var subject string
@@ -23,7 +23,7 @@ func HelloWorld(ctx workflow.Context) (string, error) {
 	}
 
 	// Sleep for a while
-	if err := workflow.Sleep(ctx, 30*time.Second); err != nil {
+	if err := workflow.ExecuteActivity(ctx, Sleep, 120).Get(ctx, nil); err != nil {
 		return "", err
 	}
 
