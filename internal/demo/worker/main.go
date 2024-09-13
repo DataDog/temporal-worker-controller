@@ -6,17 +6,16 @@ package main
 
 import (
 	"log"
-	"os"
 
 	"go.temporal.io/sdk/worker"
 )
 
 func main() {
 	var (
-		buildID           = os.Getenv("WORKER_BUILD_ID")
-		temporalHostPort  = os.Getenv("TEMPORAL_HOST_PORT")
-		temporalNamespace = os.Getenv("TEMPORAL_NAMESPACE")
-		temporalTaskQueue = os.Getenv("TEMPORAL_TASK_QUEUE")
+		buildID           = mustGetEnv("WORKER_BUILD_ID")
+		temporalHostPort  = mustGetEnv("TEMPORAL_HOST_PORT")
+		temporalNamespace = mustGetEnv("TEMPORAL_NAMESPACE")
+		temporalTaskQueue = mustGetEnv("TEMPORAL_TASK_QUEUE")
 	)
 
 	c, stopFunc := newClient(temporalHostPort, temporalNamespace, buildID)

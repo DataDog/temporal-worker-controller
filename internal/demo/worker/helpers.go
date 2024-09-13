@@ -5,6 +5,7 @@
 package main
 
 import (
+	"fmt"
 	"log/slog"
 	"os"
 	"time"
@@ -118,4 +119,11 @@ func newPrometheusScope(l log.Logger, c prometheus.Configuration) (tally.Scope, 
 	scope = sdktally.NewPrometheusNamingScope(scope)
 
 	return scope, nil
+}
+
+func mustGetEnv(key string) string {
+	if v, ok := os.LookupEnv(key); ok {
+		return v
+	}
+	panic(fmt.Sprintf("environment variable %q must be set", key))
 }
