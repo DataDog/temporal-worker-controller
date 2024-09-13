@@ -28,7 +28,7 @@ func HelloWorld(ctx workflow.Context) (string, error) {
 	}
 
 	// Return the greeting
-	return fmt.Sprintf("Hello %s!", subject), nil
+	return fmt.Sprintf("Hello %s", subject), nil
 }
 
 func GetSubject(ctx context.Context) (string, error) {
