@@ -28,19 +28,21 @@ func setActivityTimeout(ctx workflow.Context, d time.Duration) workflow.Context 
 	})
 }
 
-func newClient(l log.Logger) (client.Client, error) {
+func newClient(hostPort, namespace, buildID string) (c client.Client, stopFunc func()) {
+	l, stopFunc := configureObservability(buildID)
+
 	promScope, err := newPrometheusScope(l, prometheus.Configuration{
 		ListenAddress: "0.0.0.0:9090",
 		HandlerPath:   "/metrics",
 		TimerType:     "histogram",
 	})
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
-	return client.Dial(client.Options{
-		HostPort:  temporalHostPort,
-		Namespace: temporalNamespace,
+	c, err = client.Dial(client.Options{
+		HostPort:  hostPort,
+		Namespace: namespace,
 		Logger:    l,
 		Interceptors: []interceptor.ClientInterceptor{
 			tracing.NewTracingInterceptor(tracing.TracerOptions{
@@ -50,9 +52,14 @@ func newClient(l log.Logger) (client.Client, error) {
 		},
 		MetricsHandler: sdktally.NewMetricsHandler(promScope),
 	})
+	if err != nil {
+		panic(err)
+	}
+
+	return c, stopFunc
 }
 
-func configureObservability() (l log.Logger, stopFunc func()) {
+func configureObservability(buildID string) (l log.Logger, stopFunc func()) {
 	if err := profiler.Start(
 		profiler.WithVersion(buildID),
 		profiler.WithLogStartup(false),
@@ -66,19 +73,24 @@ func configureObservability() (l log.Logger, stopFunc func()) {
 	); err != nil {
 		panic(err)
 	}
+
 	tracer.Start(
 		tracer.WithUniversalVersion(buildID),
 		tracer.WithLogStartup(false),
 		tracer.WithSampler(tracer.NewAllSampler()),
 	)
+
 	l = log.NewStructuredLogger(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		AddSource:   true,
 		Level:       slog.LevelDebug,
 		ReplaceAttr: nil,
 	})))
+
 	return l, func() {
 		tracer.Stop()
 		profiler.Stop()
+		// Wait a few seconds before shutting down to ensure metrics etc have been flushed.
+		time.Sleep(10 * time.Second)
 	}
 }
 
@@ -94,12 +106,14 @@ func newPrometheusScope(l log.Logger, c prometheus.Configuration) (tally.Scope, 
 	if err != nil {
 		return nil, err
 	}
+
 	scopeOpts := tally.ScopeOptions{
 		CachedReporter:  reporter,
 		Separator:       prometheus.DefaultSeparator,
 		SanitizeOptions: &sdktally.PrometheusSanitizeOptions,
 		Prefix:          "",
 	}
+
 	scope, _ := tally.NewRootScope(scopeOpts, time.Second)
 	scope = sdktally.NewPrometheusNamingScope(scope)
 

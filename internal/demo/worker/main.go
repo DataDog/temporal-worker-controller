@@ -5,27 +5,22 @@
 package main
 
 import (
+	"log"
 	"os"
 
 	"go.temporal.io/sdk/worker"
 )
 
-var (
-	buildID           = os.Getenv("WORKER_BUILD_ID")
-	temporalHostPort  = os.Getenv("TEMPORAL_HOST_PORT")
-	temporalNamespace = os.Getenv("TEMPORAL_NAMESPACE")
-	temporalTaskQueue = os.Getenv("TEMPORAL_TASK_QUEUE")
-)
-
 func main() {
-	l, stopFunc := configureObservability()
-	defer stopFunc()
+	var (
+		buildID           = os.Getenv("WORKER_BUILD_ID")
+		temporalHostPort  = os.Getenv("TEMPORAL_HOST_PORT")
+		temporalNamespace = os.Getenv("TEMPORAL_NAMESPACE")
+		temporalTaskQueue = os.Getenv("TEMPORAL_TASK_QUEUE")
+	)
 
-	c, err := newClient(l)
-	if err != nil {
-		l.Error("Unable to create Temporal client", "error", err)
-		os.Exit(1)
-	}
+	c, stopFunc := newClient(temporalHostPort, temporalNamespace, buildID)
+	defer stopFunc()
 
 	w := worker.New(c, temporalTaskQueue, worker.Options{
 		BuildID:                 buildID,
@@ -39,7 +34,6 @@ func main() {
 	w.RegisterActivity(Sleep)
 
 	if err := w.Run(worker.InterruptCh()); err != nil {
-		l.Error("Unable to start worker", "error", err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 }
