@@ -1,26 +1,3 @@
-diff --git a/internal/demo/changes/progressive-rollout.patch b/internal/demo/changes/progressive-rollout.patch
-index 81ad1fe..e69de29 100644
---- a/internal/demo/changes/progressive-rollout.patch
-+++ b/internal/demo/changes/progressive-rollout.patch
-@@ -1,18 +0,0 @@
--diff --git a/internal/demo/temporal_worker.yaml b/internal/demo/temporal_worker.yaml
--index 53712ea..4a3b19a 100644
----- a/internal/demo/temporal_worker.yaml
--+++ b/internal/demo/temporal_worker.yaml
--@@ -13,7 +13,12 @@ spec:
--     taskQueue: "hello_world"
--   # How to cut over new workflow executions to the latest worker version
--   rolloutStrategy:
---    allAtOnce: {}
--+    progressive:
--+      steps:
--+        - rampPercentage: 10
--+          pauseDuration: 30s
--+        - rampPercentage: 50
--+          pauseDuration: 60s
--   # Desired number of worker replicas
--   replicas: 1
--   # Desired specification for worker pods
 diff --git a/internal/demo/temporal_worker.yaml b/internal/demo/temporal_worker.yaml
 index 53712ea..4a9cff6 100644
 --- a/internal/demo/temporal_worker.yaml
