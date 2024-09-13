@@ -37,7 +37,7 @@ spec:
                 type: integer
               rolloutStrategy:
                 properties:
-                  blueGreen:
+                  allAtOnce:
                     type: object
                   manual:
                     type: object

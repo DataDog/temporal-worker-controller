@@ -11,12 +11,7 @@ spec:
     temporalNamespace: "default"
     taskQueue: "hello_world"
   rolloutStrategy:
-    progressive:
-      steps:
-       - rampPercentage: 10
-         pauseDuration: 30s
-       - rampPercentage: 50
-         pauseDuration: 60s
+    allAtOnce: {}
   replicas: 1
   template:
     metadata:

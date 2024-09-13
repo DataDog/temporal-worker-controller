@@ -212,7 +212,7 @@ func getVersionConfig(strategy *temporaliov1alpha1.RolloutStrategy, status *temp
 	}
 
 	// Set new default version in blue/green rollout mode as soon as next version is healthy
-	if strategy.BlueGreen != nil {
+	if strategy.AllAtOnce != nil {
 		return &versionConfig{
 			setDefault: true,
 		}

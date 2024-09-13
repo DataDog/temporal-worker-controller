@@ -141,14 +141,14 @@ type VersionedDeployment struct {
 // RolloutStrategy defines strategy to apply during next rollout
 type RolloutStrategy struct {
 	// +optional
-	BlueGreen *BlueGreenRolloutStrategy `json:"blueGreen,omitempty"`
+	AllAtOnce *AllAtOnceRolloutStrategy `json:"allAtOnce,omitempty"`
 	// +optional
 	Progressive *ProgressiveRolloutStrategy `json:"progressive,omitempty"`
 	// +optional
 	Manual *ManualRolloutStrategy `json:"manual,omitempty"`
 }
 
-type BlueGreenRolloutStrategy struct{}
+type AllAtOnceRolloutStrategy struct{}
 
 type ProgressiveRolloutStrategy struct {
 	// Steps define the order of phases to execute the canary deployment
