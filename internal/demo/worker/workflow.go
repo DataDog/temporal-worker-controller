@@ -32,7 +32,7 @@ func HelloWorld(ctx workflow.Context) (string, error) {
 }
 
 func GetSubject(ctx context.Context) (string, error) {
-	return "World", nil
+	return "Replay", nil
 }
 
 func Sleep(ctx context.Context, seconds uint) error {

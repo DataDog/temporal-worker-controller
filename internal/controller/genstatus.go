@@ -69,7 +69,7 @@ func (c *versionedDeploymentCollection) getVersionedDeployment(buildID string) *
 	}
 
 	// Set ramp percentage
-	if ramp, ok := c.rampPercentages[buildID]; ok {
+	if ramp, ok := c.rampPercentages[buildID]; ok && ramp != 100 {
 		result.RampPercentage = &ramp
 	}
 
@@ -101,6 +101,8 @@ func (c *versionedDeploymentCollection) addAssignmentRule(rule *taskqueue.BuildI
 	}
 	if ramp := rule.GetPercentageRamp(); ramp != nil {
 		c.rampPercentages[rule.GetTargetBuildId()] = convertFloatToUint(ramp.GetRampPercentage())
+	} else {
+		c.rampPercentages[rule.GetTargetBuildId()] = 100
 	}
 }
 
@@ -255,16 +257,16 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, l logr.Lo
 		targetVersion  = versions.getVersionedDeployment(desiredBuildID)
 	)
 
-	// Ugly hack to set ramp percentages (not quite correctly) for now
-	for _, d := range deprecatedVersions {
-		d.RampPercentage = nil
-	}
-	if defaultVersion != nil {
-		defaultVersion.RampPercentage = nil
-		if defaultVersion.BuildID == targetVersion.BuildID {
-			targetVersion.RampPercentage = nil
-		}
-	}
+	//// Ugly hack to set ramp percentages (not quite correctly) for now
+	//for _, d := range deprecatedVersions {
+	//	d.RampPercentage = nil
+	//}
+	//if defaultVersion != nil {
+	//	defaultVersion.RampPercentage = nil
+	//	if defaultVersion.BuildID == targetVersion.BuildID {
+	//		targetVersion.RampPercentage = nil
+	//	}
+	//}
 
 	return &temporaliov1alpha1.TemporalWorkerStatus{
 		DefaultVersion:       defaultVersion,
