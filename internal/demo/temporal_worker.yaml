@@ -6,13 +6,17 @@ metadata:
     app.kubernetes.io/name: hello-world-worker
     app.kubernetes.io/instance: sample
 spec:
+  # Configuration for connecting to Temporal service
   workerOptions:
     connection: dev-server
     temporalNamespace: "default"
     taskQueue: "hello_world"
+  # How to cut over new workflow executions to the latest worker version
   rolloutStrategy:
     allAtOnce: {}
+  # Desired number of worker replicas
   replicas: 1
+  # Desired specification for worker pods
   template:
     metadata:
       annotations:
