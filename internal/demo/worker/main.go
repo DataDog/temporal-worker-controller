@@ -18,8 +18,8 @@ var (
 )
 
 func main() {
-	l, stopTracer := newLoggerAndTracer()
-	defer stopTracer()
+	l, stopFunc := configureObservability()
+	defer stopFunc()
 
 	c, err := newClient(l)
 	if err != nil {

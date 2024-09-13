@@ -15,6 +15,7 @@ import (
 	"go.temporal.io/sdk/log"
 	"go.temporal.io/sdk/workflow"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
+	"gopkg.in/DataDog/dd-trace-go.v1/profiler"
 )
 
 func setActivityTimeout(ctx workflow.Context, d time.Duration) workflow.Context {
@@ -47,7 +48,16 @@ func newClient(l log.Logger) (client.Client, error) {
 	})
 }
 
-func newLoggerAndTracer() (l log.Logger, stopTracerFunc func()) {
+func configureObservability() (l log.Logger, stopFunc func()) {
+	if err := profiler.Start(
+		profiler.WithVersion(buildID),
+		profiler.WithLogStartup(false),
+		//profiler.WithProfileTypes(
+		//	profiler.BlockProfile,
+		//),
+	); err != nil {
+		panic(err)
+	}
 	tracer.Start(
 		tracer.WithUniversalVersion(buildID),
 		tracer.WithLogStartup(false),
@@ -58,7 +68,10 @@ func newLoggerAndTracer() (l log.Logger, stopTracerFunc func()) {
 		Level:       slog.LevelDebug,
 		ReplaceAttr: nil,
 	})))
-	return l, tracer.Stop
+	return l, func() {
+		tracer.Stop()
+		profiler.Stop()
+	}
 }
 
 func newPrometheusScope(l log.Logger, c prometheus.Configuration) (tally.Scope, error) {
