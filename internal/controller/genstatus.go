@@ -123,7 +123,8 @@ func (c *versionedDeploymentCollection) addReachability(buildID string, info *ta
 		totalStats.TasksAddRate += stat.GetStats().GetTasksAddRate()
 		totalStats.TasksDispatchRate += stat.GetStats().GetTasksDispatchRate()
 	}
-	c.stats[buildID] = totalStats
+	// TODO(jlegrone): Register stats after supported by temporal server
+	//c.stats[buildID] = totalStats
 
 	return nil
 }
