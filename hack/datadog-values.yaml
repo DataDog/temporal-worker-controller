@@ -5,7 +5,6 @@ clusterAgent:
   env:
     - name: DD_KUBELET_TLS_VERIFY
       value: "false"
-
 datadog:
   apiKeyExistingSecret: datadog-api-key
   clusterName: minikube.jlegrone
@@ -19,15 +18,8 @@ datadog:
     socketEnabled: true
   prometheusScrape:
     enabled: true
-  otlp:
-    receiver:
-      protocols:
-        grpc:
-          endpoint: 0.0.0.0:4317
-          enabled: true
-    labelsAsTags:
-      pod:
-        "temporal.io/build-id": "version"
+  profiling:
+    enabled: true
   kubeStateMetricsCore:
     labelsAsTags:
       pod:
