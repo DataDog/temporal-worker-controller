@@ -56,9 +56,13 @@ func configureObservability() (l log.Logger, stopFunc func()) {
 	if err := profiler.Start(
 		profiler.WithVersion(buildID),
 		profiler.WithLogStartup(false),
-		//profiler.WithProfileTypes(
-		//	profiler.BlockProfile,
-		//),
+		profiler.WithProfileTypes(
+			profiler.CPUProfile,
+			profiler.HeapProfile,
+			profiler.BlockProfile,
+			profiler.MutexProfile,
+			profiler.GoroutineProfile,
+		),
 	); err != nil {
 		panic(err)
 	}
