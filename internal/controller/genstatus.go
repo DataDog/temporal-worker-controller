@@ -7,6 +7,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"math"
 	"sort"
 
 	"github.com/go-logr/logr"
@@ -94,7 +95,9 @@ func (c *versionedDeploymentCollection) addDeployment(buildID string, d *appsv1.
 }
 
 func (c *versionedDeploymentCollection) addAssignmentRule(rule *taskqueue.BuildIdAssignmentRule) {
-	rule.GetPercentageRamp().GetRampPercentage()
+	if ramp := rule.GetPercentageRamp(); ramp != nil {
+		c.rampPercentages[rule.GetTargetBuildId()] = uint8(math.Round(float64(ramp.GetRampPercentage())))
+	}
 }
 
 func (c *versionedDeploymentCollection) addReachability(buildID string, info *taskqueue.TaskQueueVersionInfo) error {
