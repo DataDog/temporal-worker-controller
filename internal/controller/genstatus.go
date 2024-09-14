@@ -257,16 +257,16 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, l logr.Lo
 		targetVersion  = versions.getVersionedDeployment(desiredBuildID)
 	)
 
-	//// Ugly hack to set ramp percentages (not quite correctly) for now
-	//for _, d := range deprecatedVersions {
-	//	d.RampPercentage = nil
-	//}
-	//if defaultVersion != nil {
-	//	defaultVersion.RampPercentage = nil
-	//	if defaultVersion.BuildID == targetVersion.BuildID {
-	//		targetVersion.RampPercentage = nil
-	//	}
-	//}
+	// Ugly hack to clear ramp percentages (not quite correctly) for now
+	for _, d := range deprecatedVersions {
+		d.RampPercentage = nil
+	}
+	if defaultVersion != nil {
+		defaultVersion.RampPercentage = nil
+		if defaultVersion.BuildID == targetVersion.BuildID {
+			targetVersion.RampPercentage = nil
+		}
+	}
 
 	return &temporaliov1alpha1.TemporalWorkerStatus{
 		DefaultVersion:       defaultVersion,
