@@ -125,7 +125,9 @@ func (r *TemporalWorkerReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	return ctrl.Result{
 		Requeue: true,
 		// TODO(jlegrone): Consider increasing this value if the only thing we need to check for is unreachable versions.
-		RequeueAfter: 10 * time.Second,
+		//RequeueAfter: 10 * time.Second,
+		// For demo purposes only!
+		RequeueAfter: 1 * time.Second,
 	}, nil
 }
 
