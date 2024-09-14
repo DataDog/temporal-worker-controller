@@ -28,7 +28,7 @@ func HelloWorld(ctx workflow.Context) (string, error) {
 }
 
 func GetSubject(ctx context.Context) (string, error) {
-	return "Replay", nil
+	return "World", nil
 }
 
 func Sleep(ctx context.Context, seconds uint) error {
