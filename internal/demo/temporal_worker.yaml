@@ -6,7 +6,7 @@ metadata:
     app.kubernetes.io/name: hello-world-worker
     app.kubernetes.io/instance: sample
 spec:
-  # Configuration for connecting to Temporal service
+  # Configuration for connecting to Temporal
   workerOptions:
     connection: dev-server
     temporalNamespace: "default"
@@ -15,14 +15,15 @@ spec:
   rolloutStrategy:
     progressive:
       steps:
+        # Start 1% of workflows on the new worker version
         - rampPercentage: 1
           pauseDuration: 10s
-        # Increase traffic to 10% and then wait 30 seconds
+        # Increase traffic to 10% and then wait 10 seconds
         - rampPercentage: 10
           pauseDuration: 10s
-        # Increase traffic to 50% and then wait 1 minute
-        - rampPercentage: 50
-          pauseDuration: 5m
+        # Increase traffic to 25% and then wait 2 minutes
+        - rampPercentage: 25
+          pauseDuration: 2m
   # Desired number of worker replicas
   replicas: 1
   # Desired specification for worker pods
