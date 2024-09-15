@@ -185,6 +185,7 @@ type QueueStatistics struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="DefaultBuildID",type="string",JSONPath=".status.defaultVersion.buildID",description="Number of instances in group"
 
 // TemporalWorker is the Schema for the temporalworkers API
 //
