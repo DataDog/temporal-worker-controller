@@ -168,10 +168,30 @@ func main() {
 			},
 		},
 		{
+			"Observe workflows completing on multiple versions",
+			[]demoCommand{
+				newCommand(`open https://ddstaging.datadoghq.com/dashboard/n7q-tnt-7wt`),
+			},
+		},
+		{
+			"Apply progressive rollout strategy",
+			[]demoCommand{
+				newCommand(`git apply internal/demo/changes/progressive-rollout.patch`),
+			},
+		},
+		{
+			"Make another code change",
+			//[]demoCommand{
+			//	newCommand(`git apply internal/demo/changes/progressive-rollout.patch`),
+			//},
+			nil,
+		},
+		{
 			"Revert the changes",
 			[]demoCommand{
 				newCommand(`git reset HEAD~1`),
 				gitResetWorkflowCmd,
+				newCommand(`git checkout -- internal/demo/temporal_worker.yaml`),
 				skaffoldRunCmd,
 			},
 		},
