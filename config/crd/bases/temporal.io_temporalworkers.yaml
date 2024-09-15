@@ -14,7 +14,20 @@ spec:
     singular: temporalworker
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - description: Default BuildID for new workflows
+      jsonPath: .status.defaultVersion.buildID
+      name: Default-Build-ID
+      type: string
+    - description: BuildID of the current worker template
+      jsonPath: .status.targetVersion.buildID
+      name: Target-Build-ID
+      type: string
+    - description: Percentage of new workflows starting on Target BuildID
+      jsonPath: .status.targetVersion.rampPercentage
+      name: Target-Ramp
+      type: integer
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:
