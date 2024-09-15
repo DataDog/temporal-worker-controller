@@ -45,7 +45,7 @@ type demoStep struct {
 }
 
 func (ds demoStep) Run(ctx context.Context) error {
-	_, _ = faintColor.Printf("# %s\n", ds.description)
+	//_, _ = faintColor.Printf("# %s\n", ds.description)
 	for _, c := range ds.commands {
 		// Print the command before running it
 		fmt.Printf("$ %s\n", commandColor.Sprint(c.command))
