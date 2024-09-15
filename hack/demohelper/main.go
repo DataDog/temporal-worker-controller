@@ -28,7 +28,8 @@ var (
 )
 
 type demoCommand struct {
-	command string
+	description string
+	command     string
 	// If set, the command will automatically be killed after this duration.
 	watchDuration time.Duration
 }
@@ -107,7 +108,10 @@ func main() {
 			"Ensure worker is up to date",
 			[]demoCommand{
 				newCommand(`skaffold run --profile demo`),
-				newCommand(`kubectl get deployments,pods`),
+				{
+					description: "Check status of k8s resources: there should only be one deployment",
+					command:     `kubectl get deployments,pods`,
+				},
 			},
 		},
 		{
