@@ -25,6 +25,7 @@ var (
 var (
 	skaffoldRunCmd      = newCommand(`skaffold run --profile demo`)
 	gitResetWorkflowCmd = newCommand(`git checkout internal/demo/worker/workflow.go`)
+	getWorkerStatusCmd  = newCommand(`kubectl get -o yaml temporalworker sample | yq '.status' | grep -v -E 'apiVersion|resourceVersion|kind|uid|namespace|deployment|name|versionConflictToken' | yq`)
 )
 
 type demoCommand struct {
@@ -115,6 +116,18 @@ func main() {
 					description: "Check status of k8s resources: there should only be one deployment",
 					command:     `kubectl get deployments,pods`,
 				},
+			},
+		},
+		{
+			"Describe the temporalworker resource",
+			[]demoCommand{
+				newCommand(`kubectl describe temporalworker sample`),
+			},
+		},
+		{
+			"That's a lot of information! Let's just get the status",
+			[]demoCommand{
+				getWorkerStatusCmd,
 			},
 		},
 		{
