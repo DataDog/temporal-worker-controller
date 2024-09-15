@@ -13,19 +13,21 @@ import (
 )
 
 var (
-	faintColor     = color.New(color.Faint)
-	commandColor   = color.New(color.FgHiBlue)
-	fakePromptUser = fmt.Sprintf("%s%s%s",
-		color.New(color.FgHiGreen, color.Bold).Sprint("jacob"),
-		color.New(color.Bold).Sprint("@"),
-		color.New(color.FgHiBlue, color.Bold).Sprint("replay"),
-	)
+	faintColor   = color.New(color.Faint)
+	commandColor = color.New(color.FgHiBlue)
+	//fakePromptUser = fmt.Sprintf("%s%s%s",
+	//	color.New(color.FgCyan, color.Bold).Sprint("jacob"),
+	//	color.New(color.Bold).Sprint("@"),
+	//	color.New(color.FgGreen, color.Bold).Sprint("replay"),
+	//)
+	fakePromptUser = color.New(color.FgYellow).Sprint("jacob.work/er-versioning")
 )
 
 var (
 	skaffoldRunCmd      = newCommand(`skaffold run --profile demo`)
 	gitResetWorkflowCmd = newCommand(`git checkout internal/demo/worker/workflow.go`)
-	getWorkerStatusCmd  = newCommand(`kubectl get -o yaml temporalworker sample | yq '.status' | grep -v -E 'apiVersion|resourceVersion|kind|uid|namespace|deployment|name|versionConflictToken' | yq`)
+	//getWorkerStatusCmd  = newCommand(`kubectl get -o yaml temporalworker sample | yq '.status' | grep -v -E 'apiVersion|resourceVersion|kind|uid|namespace|deployment|name|versionConflictToken' | yq`)
+	getWorkerStatusCmd = newCommand(`kubectl get -o yaml temporalworker sample | yq '.status' | grep -v -E 'apiVersion|resourceVersion|kind|uid|namespace|versionConflictToken' | yq`)
 )
 
 type demoCommand struct {
@@ -109,14 +111,14 @@ func main() {
 			"Ensure worker is up to date",
 			[]demoCommand{
 				newCommand(`skaffold run --profile demo`),
-				{
-					description: "Check status of k8s resources: there should only be one deployment",
-					command:     `kubectl get deployments,pods`,
-				},
+				//{
+				//	description: "Check status of k8s resources: there should only be one deployment",
+				//	command:     `kubectl get deployments,pods`,
+				//},
 			},
 		},
 		{
-			"Describe the temporalworker resource",
+			"Describe the temporalworker custom resource",
 			[]demoCommand{
 				newCommand(`kubectl describe temporalworker sample`),
 			},
@@ -125,6 +127,12 @@ func main() {
 			"That's a lot of information! Let's just get the status",
 			[]demoCommand{
 				getWorkerStatusCmd,
+			},
+		},
+		{
+			description: "We can also check the k8s deployents and pods associated with the worker",
+			commands: []demoCommand{
+				newCommand(`kubectl get deployments,pods`),
 			},
 		},
 		{
@@ -145,7 +153,12 @@ func main() {
 				newCommand(`git commit -m "Use workflow.Sleep instead of time.Sleep (no version gate)"`),
 				//newCommand(`git push`),
 				skaffoldRunCmd,
-				newCommand(`kubectl get deployments -w`).WithWatchDuration(5 * time.Second),
+				//newCommand(`kubectl get deployments --watch --output-watch-events`).WithWatchDuration(5 * time.Second),
+				demoCommand{
+					description:   "Watch the deployment roll out",
+					command:       `kubectl get deployments --watch --output-watch-events`,
+					watchDuration: 5 * time.Second,
+				},
 				newCommand(`kubectl get pods`),
 			},
 		},
