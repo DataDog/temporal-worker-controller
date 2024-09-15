@@ -42,45 +42,51 @@ func (ds demoStep) Run() error {
 
 func main() {
 	steps := []demoStep{
+		//{
+		//	"Deploy v1 of the worker",
+		//	[]string{
+		//		`skaffold run --profile demo`,
+		//	},
+		//},
+		//{
+		//	"Switch to workflow.Sleep using a patch/version check",
+		//	[]string{`git apply ./internal/demo/changes/version-gate.patch`},
+		//},
+		//{
+		//	"Remove the patch/version check",
+		//	[]string{
+		//		gitResetWorkflowCmd,
+		//		`git apply ./internal/demo/changes/no-version-gate.patch`,
+		//	},
+		//},
+		//{
+		//	"Deploy the worker",
+		//	[]string{
+		//		`git add internal/demo/worker/workflow.go`,
+		//		`git commit -m "Use workflow.Sleep instead of time.Sleep (no version gate)"`,
+		//		//`git push`,
+		//		skaffoldRunCmd,
+		//	},
+		//},
 		{
-			"Deploy v1 of the worker",
+			"Inspect worker state by describing status: the deprecated worker version is still reachable.",
 			[]string{
-				`skaffold run --profile demo`,
+				`kubectl describe temporalworker sample`,
 			},
 		},
-		{
-			"Switch to workflow.Sleep using a patch/version check",
-			[]string{`git apply ./internal/demo/changes/version-gate.patch`},
-		},
-		{
-			"Remove the patch/version check",
-			[]string{
-				gitResetWorkflowCmd,
-				`git apply ./internal/demo/changes/no-version-gate.patch`,
-			},
-		},
-		{
-			"Deploy the worker",
-			[]string{
-				`git add internal/demo/worker/workflow.go`,
-				`git commit -m "Use workflow.Sleep instead of time.Sleep (no version gate)"`,
-				//`git push`,
-				skaffoldRunCmd,
-			},
-		},
-		{
-			"Revert the changes",
-			[]string{
-				`git reset HEAD~1`,
-				gitResetWorkflowCmd,
-			},
-		},
-		{
-			"Deploy v2 of the worker",
-			[]string{
-				skaffoldRunCmd,
-			},
-		},
+		//{
+		//	"Revert the changes",
+		//	[]string{
+		//		`git reset HEAD~1`,
+		//		gitResetWorkflowCmd,
+		//	},
+		//},
+		//{
+		//	"Deploy v2 of the worker",
+		//	[]string{
+		//		skaffoldRunCmd,
+		//	},
+		//},
 	}
 
 	for _, s := range steps {
