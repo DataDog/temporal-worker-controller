@@ -72,6 +72,9 @@ func (ds demoStep) run(ctx context.Context, printFirstCommand bool) error {
 	for i, c := range ds.commands {
 		if i != 0 || printFirstCommand {
 			// Print the command before running it
+			if c.description != "" {
+				printConsoleComment(c.description + "\n")
+			}
 			printConsole(commandColor.Sprintf("%s\n", c.command))
 		}
 		// Run the command
