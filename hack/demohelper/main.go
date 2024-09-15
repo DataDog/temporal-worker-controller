@@ -28,7 +28,7 @@ func main() {
 	)
 
 	commands := []demoCommand{
-		{`git status`, "Echo a hello world description"},
+		{`git apply ./internal/demo/changes/version-gate.patch`, "Switch to workflow.Sleep using version gate"},
 		{`echo "Hello REPLAY!!!"`, "Echo a hello replay description"},
 	}
 
