@@ -13,8 +13,12 @@ import (
 )
 
 var (
-	faintColor   = color.New(color.Faint)
-	commandColor = color.New(color.FgHiBlue)
+	faintColor     = color.New(color.Faint)
+	commandColor   = color.New(color.FgHiBlue, color.Bold)
+	fakePromptUser = fmt.Sprintf("%s@%s",
+		color.New(color.FgHiGreen).Sprint("jacob"),
+		color.New(color.FgHiBlue).Sprint("replay"),
+	)
 )
 
 var (
@@ -50,7 +54,7 @@ func (ds demoStep) RunAfterConfirmation(ctx context.Context) error {
 		printConsole(fmt.Sprintf("%s %s",
 			commandColor.Sprint(ds.commands[0].command),
 			//faintColor.Sprint("# [ENTER] ")),
-			" ",
+			"",
 		))
 		// wait for ENTER key
 		if _, err := fmt.Scanln(); err != nil {
@@ -149,24 +153,19 @@ func main() {
 func runDemo(steps []demoStep) {
 	for _, s := range steps {
 		// Print the description
-		//fmt.Printf("$ %s", faintColor.Sprintf("# %s [ENTER] ", s.description))
 		printConsoleComment(s.description + "\n")
-		//// wait for ENTER key
-		//if _, err := fmt.Scanln(); err != nil {
-		//	log.Fatalf("Error reading input: %v", err)
-		//}
 
 		// Clear the console
-		//if err := clearConsole(); err != nil {
-		//	log.Fatalf("Error clearing console: %v", err)
-		//}
+		if err := clearConsole(); err != nil {
+			log.Fatalf("Error clearing console: %v", err)
+		}
 
 		// Run the command
 		if err := s.RunAfterConfirmation(context.Background()); err != nil {
 			log.Fatalf("Error running command: %v", err)
 		}
 	}
-	_, _ = faintColor.Println("# Demo complete!")
+	printConsoleComment("Demo complete!")
 }
 
 func clearConsole() error {
@@ -180,7 +179,7 @@ func printConsoleComment(comment string) {
 }
 
 func printConsole(msg string) {
-	fmt.Printf("$ %s", msg)
+	fmt.Printf("%s $ %s", fakePromptUser, msg)
 }
 
 func ignoreExecKillError(err error) error {
