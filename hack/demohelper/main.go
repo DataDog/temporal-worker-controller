@@ -20,6 +20,7 @@ type demoStep struct {
 }
 
 func (ds demoStep) Run() error {
+	_, _ = faintColor.Printf("# %s\n", ds.description)
 	for _, c := range ds.commands {
 		fmt.Printf("$ %s\n", commandColor.Sprint(c))
 		cmd := exec.Command("sh", "-c", c)
@@ -34,6 +35,12 @@ func (ds demoStep) Run() error {
 
 func main() {
 	steps := []demoStep{
+		{
+			"Deploy v1 of the worker",
+			[]string{
+				`skaffold run --profile demo`,
+			},
+		},
 		{
 			"Switch to workflow.Sleep using a patch/version check",
 			[]string{`git apply ./internal/demo/changes/version-gate.patch`},
