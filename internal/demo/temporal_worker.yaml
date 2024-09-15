@@ -13,17 +13,7 @@ spec:
     taskQueue: "hello_world"
   # How to cut over new workflow executions to the latest worker version
   rolloutStrategy:
-    progressive:
-      steps:
-        # Start 1% of workflows on the new worker version
-        - rampPercentage: 1
-          pauseDuration: 10s
-        # Increase traffic to 10% and then wait 10 seconds
-        - rampPercentage: 10
-          pauseDuration: 10s
-        # Increase traffic to 25% and then wait 2 minutes
-        - rampPercentage: 25
-          pauseDuration: 2m
+    allAtOnce: {}
   # Desired number of worker replicas
   replicas: 1
   # Desired specification for worker pods
