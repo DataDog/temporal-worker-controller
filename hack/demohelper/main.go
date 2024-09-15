@@ -82,51 +82,52 @@ func main() {
 		{
 			"Deploy v1 of the worker",
 			[]demoCommand{
-				//`skaffold run --profile demo`,
-				newCommand(`kubectl get pods -w`).WithWatchDuration(10 * time.Second),
+				newCommand(`skaffold run --profile demo`),
+				newCommand(`kubectl get deployments,pods`),
+				//newCommand(`kubectl get pods -w`).WithWatchDuration(10 * time.Second),
 				//newCommand(`watch kubectl get deployments,pods`).WithWatchDuration(5 * time.Second),
 			},
 		},
-		//{
-		//	"Watch pods come up",
-		//	[]string{
-		//		`watch kubectl get pods`,
-		//	},
-		//},
-		//{
-		//	"Switch to workflow.Sleep using a patch/version check",
-		//	[]string{`git apply ./internal/demo/changes/version-gate.patch`},
-		//},
-		//{
-		//	"Remove the patch/version check",
-		//	[]string{
-		//		gitResetWorkflowCmd,
-		//		`git apply ./internal/demo/changes/no-version-gate.patch`,
-		//	},
-		//},
-		//{
-		//	"Deploy the worker",
-		//	[]string{
-		//		`git add internal/demo/worker/workflow.go`,
-		//		`git commit -m "Use workflow.Sleep instead of time.Sleep (no version gate)"`,
-		//		//`git push`,
-		//		skaffoldRunCmd,
-		//	},
-		//},
-		//{
-		//	"Inspect worker status: the deprecated version should still be reachable.",
-		//	[]string{
-		//		`kubectl get -o yaml temporalworker sample | yq '.status' | grep -v -E 'apiVersion|resourceVersion|kind|uid|namespace|deployment|name|versionConflictToken' | yq`,
-		//	},
-		//},
-		//{
-		//	"Revert the changes",
-		//	[]string{
-		//		`git reset HEAD~1`,
-		//		gitResetWorkflowCmd,
-		//		skaffoldRunCmd,
-		//	},
-		//},
+		{
+			"Watch pods come up",
+			[]demoCommand{
+				newCommand(`watch kubectl get pods`),
+			},
+		},
+		{
+			"Switch to workflow.Sleep using a patch/version check",
+			[]demoCommand{newCommand(`git apply ./internal/demo/changes/version-gate.patch`)},
+		},
+		{
+			"Remove the patch/version check",
+			[]demoCommand{
+				gitResetWorkflowCmd,
+				`git apply ./internal/demo/changes/no-version-gate.patch`),
+			},
+		},
+		{
+			"Deploy the worker",
+			[]demoCommand{
+				`git add internal/demo/worker/workflow.go`,
+				`git commit -m "Use workflow.Sleep instead of time.Sleep (no version gate)"`,
+				//`git push`,
+				skaffoldRunCmd,
+			},
+		},
+		{
+			"Inspect worker status: the deprecated version should still be reachable.",
+			[]demoCommand{
+				`kubectl get -o yaml temporalworker sample | yq '.status' | grep -v -E 'apiVersion|resourceVersion|kind|uid|namespace|deployment|name|versionConflictToken' | yq`,
+			},
+		},
+		{
+			"Revert the changes",
+			[]demoCommand{
+				`git reset HEAD~1`,
+				gitResetWorkflowCmd,
+				skaffoldRunCmd,
+			},
+		},
 	}
 
 	for _, s := range steps {
