@@ -54,11 +54,8 @@ type demoStep struct {
 func (ds demoStep) RunAfterConfirmation(ctx context.Context) error {
 	// Print the command before running it
 	if len(ds.commands) > 0 {
-		printConsole(fmt.Sprintf("%s %s",
-			commandColor.Sprint(ds.commands[0].command),
-			//faintColor.Sprint("# [ENTER] ")),
-			"",
-		))
+		printConsole("")
+		fmt.Print(commandColor.Sprint(ds.commands[0].command) + " ")
 		// wait for ENTER key
 		if _, err := fmt.Scanln(); err != nil {
 			return fmt.Errorf("error reading input: %w", err)
@@ -186,7 +183,7 @@ func runDemo(steps []demoStep) {
 			log.Fatalf("Error running command: %v", err)
 		}
 	}
-	printConsoleComment("Demo complete!")
+	printConsoleComment("Demo complete!\n")
 }
 
 func clearConsole() error {
