@@ -35,19 +35,29 @@ func (ds demoStep) Run() error {
 func main() {
 	steps := []demoStep{
 		{
-			"Switch to workflow.Sleep using version gate",
+			"Switch to workflow.Sleep using a patch/version check",
 			[]string{`git apply ./internal/demo/changes/version-gate.patch`},
 		},
 		{
-			"Remove the version gate",
+			"Remove the patch/version check",
 			[]string{
 				`git checkout internal/demo/worker/workflow.go`,
 				`git apply ./internal/demo/changes/no-version-gate.patch`,
 			},
 		},
 		{
+			"Deploy the worker",
+			[]string{
+				`git add internal/demo/worker/workflow.go`,
+				`git commit -m "Use workflow.Sleep instead of time.Sleep (no version gate)"`,
+				//`git push`,
+				`skaffold run --profile demo`,
+			},
+		},
+		{
 			"Revert the changes",
 			[]string{
+				`git reset HEAD~1`,
 				`git checkout internal/demo/worker/workflow.go`,
 			},
 		},
@@ -55,7 +65,7 @@ func main() {
 
 	for i, s := range steps {
 		if i != 0 {
-			_, _ = faintColor.Print("\n---------------------------------------------\n")
+			_, _ = faintColor.Print("\n-------------------------\n")
 		}
 
 		// Print the description
