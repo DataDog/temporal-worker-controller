@@ -48,7 +48,7 @@ func (ds demoStep) Run(ctx context.Context) error {
 	//_, _ = faintColor.Printf("# %s\n", ds.description)
 	for _, c := range ds.commands {
 		// Print the command before running it
-		fmt.Printf("$ %s\n", commandColor.Sprint(c.command))
+		printConsoleCommand(c.command)
 		// Run the command
 		if err := func() error {
 			var (
@@ -130,8 +130,8 @@ func main() {
 func runDemo(steps []demoStep) {
 	for _, s := range steps {
 		// Print the description
-		_, _ = faintColor.Print("# Next: ", s.description, " [ENTER] ")
-
+		//fmt.Printf("$ %s", faintColor.Sprintf("# %s [ENTER] ", s.description))
+		printConsoleComment(s.description + " [ENTER] ")
 		// wait for ENTER key
 		if _, err := fmt.Scanln(); err != nil {
 			log.Fatalf("Error reading input: %v", err)
@@ -154,6 +154,14 @@ func clearConsole() error {
 	cmd := exec.Command("clear")
 	cmd.Stdout = os.Stdout
 	return cmd.Run()
+}
+
+func printConsoleComment(comment string) {
+	fmt.Printf("$ %s", faintColor.Sprint("# "+comment))
+}
+
+func printConsoleCommand(command string) {
+	fmt.Printf("$ %s\n", commandColor.Sprint(command))
 }
 
 func ignoreExecKillError(err error) error {
