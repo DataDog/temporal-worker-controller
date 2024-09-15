@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
+	"time"
 
 	"github.com/fatih/color"
 )
@@ -14,26 +17,60 @@ var (
 	commandColor = color.New(color.FgHiGreen)
 )
 
-const (
-	skaffoldRunCmd      = `skaffold run --profile demo`
-	gitResetWorkflowCmd = `git checkout internal/demo/worker/workflow.go`
+var (
+	skaffoldRunCmd      = newCommand(`skaffold run --profile demo`)
+	gitResetWorkflowCmd = newCommand(`git checkout internal/demo/worker/workflow.go`)
 )
+
+type demoCommand struct {
+	command string
+	// If set, the command will automatically be killed after this duration.
+	watchDuration time.Duration
+}
+
+func newCommand(command string) demoCommand {
+	return demoCommand{command: command, watchDuration: 0}
+}
+
+func (c demoCommand) WithWatchDuration(d time.Duration) demoCommand {
+	return demoCommand{
+		command:       c.command,
+		watchDuration: d,
+	}
+}
 
 type demoStep struct {
 	description string
-	commands    []string
+	commands    []demoCommand
 }
 
-func (ds demoStep) Run() error {
+func (ds demoStep) Run(ctx context.Context) error {
 	_, _ = faintColor.Printf("# %s\n", ds.description)
 	for _, c := range ds.commands {
 		// Print the command before running it
-		fmt.Printf("$ %s\n", commandColor.Sprint(c))
+		fmt.Printf("$ %s\n", commandColor.Sprint(c.command))
 		// Run the command
-		cmd := exec.Command("sh", "-c", c)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
+		if err := func() error {
+			var (
+				commandCtx = ctx
+				isWatch    = c.watchDuration > 0
+			)
+			if isWatch {
+				c, cancel := context.WithTimeout(ctx, c.watchDuration)
+				defer cancel()
+				commandCtx = c
+			}
+
+			cmd := exec.CommandContext(commandCtx, "sh", "-c", c.command)
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+
+			err := cmd.Run()
+			if isWatch {
+				return ignoreExecKillError(err)
+			}
+			return err
+		}(); err != nil {
 			return err
 		}
 	}
@@ -44,44 +81,52 @@ func main() {
 	steps := []demoStep{
 		{
 			"Deploy v1 of the worker",
-			[]string{
-				`skaffold run --profile demo`,
+			[]demoCommand{
+				//`skaffold run --profile demo`,
+				newCommand(`kubectl get pods -w`).WithWatchDuration(10 * time.Second),
+				//newCommand(`watch kubectl get deployments,pods`).WithWatchDuration(5 * time.Second),
 			},
 		},
-		{
-			"Switch to workflow.Sleep using a patch/version check",
-			[]string{`git apply ./internal/demo/changes/version-gate.patch`},
-		},
-		{
-			"Remove the patch/version check",
-			[]string{
-				gitResetWorkflowCmd,
-				`git apply ./internal/demo/changes/no-version-gate.patch`,
-			},
-		},
-		{
-			"Deploy the worker",
-			[]string{
-				`git add internal/demo/worker/workflow.go`,
-				`git commit -m "Use workflow.Sleep instead of time.Sleep (no version gate)"`,
-				//`git push`,
-				skaffoldRunCmd,
-			},
-		},
-		{
-			"Inspect worker status: the deprecated version should still be reachable.",
-			[]string{
-				`kubectl get -o yaml temporalworker sample | yq '.status' | grep -v -E 'apiVersion|resourceVersion|kind|uid|namespace|deployment|name|versionConflictToken' | yq`,
-			},
-		},
-		{
-			"Revert the changes",
-			[]string{
-				`git reset HEAD~1`,
-				gitResetWorkflowCmd,
-				skaffoldRunCmd,
-			},
-		},
+		//{
+		//	"Watch pods come up",
+		//	[]string{
+		//		`watch kubectl get pods`,
+		//	},
+		//},
+		//{
+		//	"Switch to workflow.Sleep using a patch/version check",
+		//	[]string{`git apply ./internal/demo/changes/version-gate.patch`},
+		//},
+		//{
+		//	"Remove the patch/version check",
+		//	[]string{
+		//		gitResetWorkflowCmd,
+		//		`git apply ./internal/demo/changes/no-version-gate.patch`,
+		//	},
+		//},
+		//{
+		//	"Deploy the worker",
+		//	[]string{
+		//		`git add internal/demo/worker/workflow.go`,
+		//		`git commit -m "Use workflow.Sleep instead of time.Sleep (no version gate)"`,
+		//		//`git push`,
+		//		skaffoldRunCmd,
+		//	},
+		//},
+		//{
+		//	"Inspect worker status: the deprecated version should still be reachable.",
+		//	[]string{
+		//		`kubectl get -o yaml temporalworker sample | yq '.status' | grep -v -E 'apiVersion|resourceVersion|kind|uid|namespace|deployment|name|versionConflictToken' | yq`,
+		//	},
+		//},
+		//{
+		//	"Revert the changes",
+		//	[]string{
+		//		`git reset HEAD~1`,
+		//		gitResetWorkflowCmd,
+		//		skaffoldRunCmd,
+		//	},
+		//},
 	}
 
 	for _, s := range steps {
@@ -99,8 +144,8 @@ func main() {
 		}
 
 		// Run the command
-		if err := s.Run(); err != nil {
-			log.Fatalf("Error running command %q: %v", s.commands, err)
+		if err := s.Run(context.Background()); err != nil {
+			log.Fatalf("Error running command: %v", err)
 		}
 	}
 
@@ -111,4 +156,16 @@ func clearConsole() error {
 	cmd := exec.Command("clear")
 	cmd.Stdout = os.Stdout
 	return cmd.Run()
+}
+
+func ignoreExecKillError(err error) error {
+	// Extract the exit code
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		if exitErr.ExitCode() == -1 {
+			return nil
+		}
+		//return nil
+	}
+	return err
 }
