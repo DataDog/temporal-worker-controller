@@ -47,7 +47,7 @@ type demoStep struct {
 func (ds demoStep) RunAfterConfirmation(ctx context.Context) error {
 	// Print the command before running it
 	if len(ds.commands) > 0 {
-		printConsoleCommand(ds.commands[0].command)
+		printConsole(fmt.Sprintf("%s %s", commandColor.Sprint(ds.commands[0].command), faintColor.Sprint("# [ENTER] ")))
 		// wait for ENTER key
 		if _, err := fmt.Scanln(); err != nil {
 			return fmt.Errorf("error reading input: %w", err)
@@ -62,7 +62,7 @@ func (ds demoStep) run(ctx context.Context, printFirstCommand bool) error {
 	for i, c := range ds.commands {
 		if i != 0 || printFirstCommand {
 			// Print the command before running it
-			printConsoleCommand(c.command)
+			printConsole(commandColor.Sprintf("%s\n", c.command))
 		}
 		// Run the command
 		if err := func() error {
@@ -147,12 +147,10 @@ func runDemo(steps []demoStep) {
 		// Print the description
 		//fmt.Printf("$ %s", faintColor.Sprintf("# %s [ENTER] ", s.description))
 		printConsoleComment(s.description + " [ENTER] ")
-		// Print the command before running it
-		printConsoleCommand(c.command)
-		// wait for ENTER key
-		if _, err := fmt.Scanln(); err != nil {
-			log.Fatalf("Error reading input: %v", err)
-		}
+		//// wait for ENTER key
+		//if _, err := fmt.Scanln(); err != nil {
+		//	log.Fatalf("Error reading input: %v", err)
+		//}
 
 		// Clear the console
 		//if err := clearConsole(); err != nil {
@@ -174,11 +172,11 @@ func clearConsole() error {
 }
 
 func printConsoleComment(comment string) {
-	fmt.Printf("$ %s", faintColor.Sprint("# "+comment))
+	printConsole(faintColor.Sprint("# " + comment))
 }
 
-func printConsoleCommand(command string) {
-	fmt.Printf("$ %s\n", commandColor.Sprint(command))
+func printConsole(msg string) {
+	fmt.Printf("$ %s", msg)
 }
 
 func ignoreExecKillError(err error) error {
