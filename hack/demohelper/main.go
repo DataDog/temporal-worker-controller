@@ -14,10 +14,11 @@ import (
 
 var (
 	faintColor     = color.New(color.Faint)
-	commandColor   = color.New(color.FgHiBlue, color.Bold)
-	fakePromptUser = fmt.Sprintf("%s@%s",
-		color.New(color.FgHiGreen).Sprint("jacob"),
-		color.New(color.FgHiBlue).Sprint("replay"),
+	commandColor   = color.New(color.FgHiBlue)
+	fakePromptUser = fmt.Sprintf("%s%s%s",
+		color.New(color.FgHiGreen, color.Bold).Sprint("jacob"),
+		color.New(color.Bold).Sprint("@"),
+		color.New(color.FgHiBlue, color.Bold).Sprint("replay"),
 	)
 )
 
