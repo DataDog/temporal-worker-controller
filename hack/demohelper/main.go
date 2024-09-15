@@ -14,7 +14,7 @@ import (
 
 var (
 	faintColor   = color.New(color.Faint)
-	commandColor = color.New(color.FgHiGreen)
+	commandColor = color.New(color.FgHiBlue)
 )
 
 var (
