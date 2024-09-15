@@ -153,13 +153,13 @@ func main() {
 
 func runDemo(steps []demoStep) {
 	for _, s := range steps {
+		// Clear the console
+		//if err := clearConsole(); err != nil {
+		//	log.Fatalf("Error clearing console: %v", err)
+		//}
+
 		// Print the description
 		printConsoleComment(s.description + "\n")
-
-		// Clear the console
-		if err := clearConsole(); err != nil {
-			log.Fatalf("Error clearing console: %v", err)
-		}
 
 		// Run the command
 		if err := s.RunAfterConfirmation(context.Background()); err != nil {
