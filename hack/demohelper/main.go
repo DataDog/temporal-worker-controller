@@ -80,20 +80,12 @@ func (ds demoStep) Run(ctx context.Context) error {
 func main() {
 	steps := []demoStep{
 		{
-			"Deploy v1 of the worker",
+			"Ensure worker is up to date",
 			[]demoCommand{
 				newCommand(`skaffold run --profile demo`),
 				newCommand(`kubectl get deployments,pods`),
-				//newCommand(`kubectl get pods -w`).WithWatchDuration(10 * time.Second),
-				//newCommand(`watch kubectl get deployments,pods`).WithWatchDuration(5 * time.Second),
 			},
 		},
-		//{
-		//	"Watch pods come up",
-		//	[]demoCommand{
-		//		newCommand(`watch kubectl get pods`).WithWatchDuration(5 * time.Second),
-		//	},
-		//},
 		{
 			"Switch to workflow.Sleep using a patch/version check",
 			[]demoCommand{newCommand(`git apply ./internal/demo/changes/version-gate.patch`)},
@@ -145,9 +137,9 @@ func runDemo(steps []demoStep) {
 		}
 
 		// Clear the console
-		if err := clearConsole(); err != nil {
-			log.Fatalf("Error clearing console: %v", err)
-		}
+		//if err := clearConsole(); err != nil {
+		//	log.Fatalf("Error clearing console: %v", err)
+		//}
 
 		// Run the command
 		if err := s.Run(context.Background()); err != nil {
