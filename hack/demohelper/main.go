@@ -14,6 +14,11 @@ var (
 	commandColor = color.New(color.FgHiGreen)
 )
 
+const (
+	skaffoldRunCmd      = `skaffold run --profile demo`
+	gitResetWorkflowCmd = `git checkout internal/demo/worker/workflow.go`
+)
+
 type demoStep struct {
 	description string
 	commands    []string
@@ -22,7 +27,9 @@ type demoStep struct {
 func (ds demoStep) Run() error {
 	_, _ = faintColor.Printf("# %s\n", ds.description)
 	for _, c := range ds.commands {
+		// Print the command before running it
 		fmt.Printf("$ %s\n", commandColor.Sprint(c))
+		// Run the command
 		cmd := exec.Command("sh", "-c", c)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
@@ -48,7 +55,7 @@ func main() {
 		{
 			"Remove the patch/version check",
 			[]string{
-				`git checkout internal/demo/worker/workflow.go`,
+				gitResetWorkflowCmd,
 				`git apply ./internal/demo/changes/no-version-gate.patch`,
 			},
 		},
@@ -58,25 +65,27 @@ func main() {
 				`git add internal/demo/worker/workflow.go`,
 				`git commit -m "Use workflow.Sleep instead of time.Sleep (no version gate)"`,
 				//`git push`,
-				`skaffold run --profile demo`,
+				skaffoldRunCmd,
 			},
 		},
 		{
 			"Revert the changes",
 			[]string{
 				`git reset HEAD~1`,
-				`git checkout internal/demo/worker/workflow.go`,
+				gitResetWorkflowCmd,
+			},
+		},
+		{
+			"Deploy v2 of the worker",
+			[]string{
+				skaffoldRunCmd,
 			},
 		},
 	}
 
-	for i, s := range steps {
-		if i != 0 {
-			_, _ = faintColor.Print("\n-------------------------\n")
-		}
-
+	for _, s := range steps {
 		// Print the description
-		_, _ = faintColor.Print("Next: ", s.description, " [ENTER] ")
+		_, _ = faintColor.Print("# Next: ", s.description, " [ENTER] ")
 
 		// wait for ENTER key
 		if _, err := fmt.Scanln(); err != nil {
@@ -93,6 +102,8 @@ func main() {
 			log.Fatalf("Error running command %q: %v", s.commands, err)
 		}
 	}
+
+	_, _ = faintColor.Println("# Demo complete!")
 }
 
 func clearConsole() error {
