@@ -88,12 +88,12 @@ func main() {
 				//newCommand(`watch kubectl get deployments,pods`).WithWatchDuration(5 * time.Second),
 			},
 		},
-		{
-			"Watch pods come up",
-			[]demoCommand{
-				newCommand(`watch kubectl get pods`),
-			},
-		},
+		//{
+		//	"Watch pods come up",
+		//	[]demoCommand{
+		//		newCommand(`watch kubectl get pods`).WithWatchDuration(5 * time.Second),
+		//	},
+		//},
 		{
 			"Switch to workflow.Sleep using a patch/version check",
 			[]demoCommand{newCommand(`git apply ./internal/demo/changes/version-gate.patch`)},
@@ -112,6 +112,7 @@ func main() {
 				newCommand(`git commit -m "Use workflow.Sleep instead of time.Sleep (no version gate)"`),
 				//newCommand(`git push`),
 				skaffoldRunCmd,
+				newCommand(`kubectl get deployments,pods`),
 			},
 		},
 		{
@@ -130,6 +131,10 @@ func main() {
 		},
 	}
 
+	runDemo(steps)
+}
+
+func runDemo(steps []demoStep) {
 	for _, s := range steps {
 		// Print the description
 		_, _ = faintColor.Print("# Next: ", s.description, " [ENTER] ")
@@ -149,7 +154,6 @@ func main() {
 			log.Fatalf("Error running command: %v", err)
 		}
 	}
-
 	_, _ = faintColor.Println("# Demo complete!")
 }
 
