@@ -50,7 +50,7 @@ func (ds demoStep) RunAfterConfirmation(ctx context.Context) error {
 		printConsole(fmt.Sprintf("%s %s",
 			commandColor.Sprint(ds.commands[0].command),
 			//faintColor.Sprint("# [ENTER] ")),
-			"",
+			" ",
 		))
 		// wait for ENTER key
 		if _, err := fmt.Scanln(); err != nil {
