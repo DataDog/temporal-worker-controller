@@ -9,13 +9,19 @@ import (
 	"github.com/fatih/color"
 )
 
+var (
+	faintColor   = color.New(color.Faint)
+	commandColor = color.New(color.FgHiGreen)
+)
+
 type demoStep struct {
-	commands    []string
 	description string
+	commands    []string
 }
 
 func (ds demoStep) Run() error {
 	for _, c := range ds.commands {
+		fmt.Printf("$ %s\n", commandColor.Sprint(c))
 		cmd := exec.Command("sh", "-c", c)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
@@ -27,19 +33,23 @@ func (ds demoStep) Run() error {
 }
 
 func main() {
-	var (
-		faintColor   = color.New(color.Faint)
-		commandColor = color.New(color.FgHiGreen)
-	)
-
 	steps := []demoStep{
-		{[]string{`git apply ./internal/demo/changes/version-gate.patch`}, "Switch to workflow.Sleep using version gate"},
 		{
+			"Switch to workflow.Sleep using version gate",
+			[]string{`git apply ./internal/demo/changes/version-gate.patch`},
+		},
+		{
+			"Remove the version gate",
 			[]string{
 				`git checkout internal/demo/worker/workflow.go`,
 				`git apply ./internal/demo/changes/no-version-gate.patch`,
 			},
-			"Remove the version gate",
+		},
+		{
+			"Revert the changes",
+			[]string{
+				`git checkout internal/demo/worker/workflow.go`,
+			},
 		},
 	}
 
@@ -62,7 +72,6 @@ func main() {
 		}
 
 		// Run the command
-		fmt.Printf("$ %s\n", commandColor.Sprint(s.commands))
 		if err := s.Run(); err != nil {
 			log.Fatalf("Error running command %q: %v", s.commands, err)
 		}
