@@ -130,7 +130,7 @@ func main() {
 			},
 		},
 		{
-			description: "We can also check the k8s deployents and pods associated with the worker",
+			description: "Inspect k8s deployents and pods associated with the worker",
 			commands: []demoCommand{
 				newCommand(`kubectl get deployments,pods`),
 			},
@@ -153,7 +153,6 @@ func main() {
 				newCommand(`git commit -m "Use workflow.Sleep instead of time.Sleep (no version gate)"`),
 				//newCommand(`git push`),
 				skaffoldRunCmd,
-				//newCommand(`kubectl get deployments --watch --output-watch-events`).WithWatchDuration(5 * time.Second),
 				demoCommand{
 					description:   "Watch the deployment roll out",
 					command:       `kubectl get deployments --watch --output-watch-events`,
