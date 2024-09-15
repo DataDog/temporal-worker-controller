@@ -44,11 +44,26 @@ type demoStep struct {
 	commands    []demoCommand
 }
 
-func (ds demoStep) Run(ctx context.Context) error {
+func (ds demoStep) RunAfterConfirmation(ctx context.Context) error {
+	// Print the command before running it
+	if len(ds.commands) > 0 {
+		printConsoleCommand(ds.commands[0].command)
+		// wait for ENTER key
+		if _, err := fmt.Scanln(); err != nil {
+			return fmt.Errorf("error reading input: %w", err)
+		}
+	}
+
+	return ds.run(ctx, false)
+}
+
+func (ds demoStep) run(ctx context.Context, printFirstCommand bool) error {
 	//_, _ = faintColor.Printf("# %s\n", ds.description)
-	for _, c := range ds.commands {
-		// Print the command before running it
-		printConsoleCommand(c.command)
+	for i, c := range ds.commands {
+		if i != 0 || printFirstCommand {
+			// Print the command before running it
+			printConsoleCommand(c.command)
+		}
 		// Run the command
 		if err := func() error {
 			var (
@@ -132,6 +147,8 @@ func runDemo(steps []demoStep) {
 		// Print the description
 		//fmt.Printf("$ %s", faintColor.Sprintf("# %s [ENTER] ", s.description))
 		printConsoleComment(s.description + " [ENTER] ")
+		// Print the command before running it
+		printConsoleCommand(c.command)
 		// wait for ENTER key
 		if _, err := fmt.Scanln(); err != nil {
 			log.Fatalf("Error reading input: %v", err)
@@ -143,7 +160,7 @@ func runDemo(steps []demoStep) {
 		//}
 
 		// Run the command
-		if err := s.Run(context.Background()); err != nil {
+		if err := s.RunAfterConfirmation(context.Background()); err != nil {
 			log.Fatalf("Error running command: %v", err)
 		}
 	}
