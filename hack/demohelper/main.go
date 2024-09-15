@@ -102,28 +102,28 @@ func main() {
 			"Remove the patch/version check",
 			[]demoCommand{
 				gitResetWorkflowCmd,
-				`git apply ./internal/demo/changes/no-version-gate.patch`),
+				newCommand(`git apply ./internal/demo/changes/no-version-gate.patch`),
 			},
 		},
 		{
-			"Deploy the worker",
+			"Deploy the change to workflow.Sleep",
 			[]demoCommand{
-				`git add internal/demo/worker/workflow.go`,
-				`git commit -m "Use workflow.Sleep instead of time.Sleep (no version gate)"`,
-				//`git push`,
+				newCommand(`git add internal/demo/worker/workflow.go`),
+				newCommand(`git commit -m "Use workflow.Sleep instead of time.Sleep (no version gate)"`),
+				//newCommand(`git push`),
 				skaffoldRunCmd,
 			},
 		},
 		{
 			"Inspect worker status: the deprecated version should still be reachable.",
 			[]demoCommand{
-				`kubectl get -o yaml temporalworker sample | yq '.status' | grep -v -E 'apiVersion|resourceVersion|kind|uid|namespace|deployment|name|versionConflictToken' | yq`,
+				newCommand(`kubectl get -o yaml temporalworker sample | yq '.status' | grep -v -E 'apiVersion|resourceVersion|kind|uid|namespace|deployment|name|versionConflictToken' | yq`),
 			},
 		},
 		{
 			"Revert the changes",
 			[]demoCommand{
-				`git reset HEAD~1`,
+				newCommand(`git reset HEAD~1`),
 				gitResetWorkflowCmd,
 				skaffoldRunCmd,
 			},
