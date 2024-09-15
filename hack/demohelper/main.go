@@ -112,7 +112,7 @@ func main() {
 				newCommand(`git commit -m "Use workflow.Sleep instead of time.Sleep (no version gate)"`),
 				//newCommand(`git push`),
 				skaffoldRunCmd,
-				newCommand(`kubectl get deployments,pods`),
+				newCommand(`kubectl get deployments -f`).WithWatchDuration(5 * time.Second),
 			},
 		},
 		{
