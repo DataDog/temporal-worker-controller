@@ -201,6 +201,10 @@ func main() {
 }
 
 func runDemo(steps []demoStep) {
+	if err := clearConsole(); err != nil {
+		log.Fatalf("Error clearing console: %v", err)
+	}
+
 	for _, s := range steps {
 		// Clear the console
 		//if err := clearConsole(); err != nil {
