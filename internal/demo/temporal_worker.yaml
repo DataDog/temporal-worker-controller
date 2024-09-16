@@ -36,6 +36,9 @@ spec:
       containers:
         - name: main
           image: worker
+          readinessProbe:
+            httpGet:
+              port: 8080
 ---
 apiVersion: temporal.io/v1alpha1
 kind: TemporalConnection

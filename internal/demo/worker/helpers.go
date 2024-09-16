@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"time"
 
@@ -58,6 +59,14 @@ func newClient(hostPort, namespace, buildID string) (c client.Client, stopFunc f
 }
 
 func configureObservability(buildID string) (l log.Logger, stopFunc func()) {
+	go func() {
+		// Delay pod readiness by 10 seconds
+		time.Sleep(10 * time.Second)
+		http.ListenAndServe("0.0.0.0:8080", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+	}()
+
 	if err := profiler.Start(
 		profiler.WithVersion(buildID),
 		profiler.WithLogStartup(false),
