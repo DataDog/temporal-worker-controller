@@ -164,11 +164,12 @@ func main() {
 		{
 			"Inspect worker status: the deprecated version should still be reachable.",
 			[]demoCommand{
-				newCommand(`kubectl get -o yaml temporalworker demo | yq '.status' | grep -v -E 'apiVersion|resourceVersion|kind|uid|namespace|deployment|name|versionConflictToken' | yq`),
+				//newCommand(`kubectl get -o yaml temporalworker demo | yq '.status' | grep -v -E 'apiVersion|resourceVersion|kind|uid|namespace|deployment|name|versionConflictToken' | yq`),
+				getWorkerStatusCmd,
 			},
 		},
 		{
-			"Observe workflows completing on multiple versions",
+			"Observe workflow starts and completions",
 			[]demoCommand{
 				newCommand(`open https://ddstaging.datadoghq.com/dashboard/n7q-tnt-7wt`),
 				// Click "view related workflow executions" to pivot to temporal UI
