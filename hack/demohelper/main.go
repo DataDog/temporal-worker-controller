@@ -171,12 +171,16 @@ func main() {
 			"Observe workflows completing on multiple versions",
 			[]demoCommand{
 				newCommand(`open https://ddstaging.datadoghq.com/dashboard/n7q-tnt-7wt`),
+				// Click "view related workflow executions" to pivot to temporal UI
+				// Observe that count of open workflows at this version is decreasing with each refresh
+				// Switch to watch output in terminal
+				// Observe original worker version's deployment scale to zero two minutes after new version was created
 			},
 		},
 		{
 			"Apply progressive rollout strategy",
 			[]demoCommand{
-				newCommand(`code internal/demo/temporal_worker.yaml`),
+				//newCommand(`code internal/demo/temporal_worker.yaml`),
 				newCommand(`git apply internal/demo/changes/progressive-rollout.patch`),
 			},
 		},
