@@ -188,9 +188,8 @@ func main() {
 				newCommand(`git push`),
 				skaffoldRunCmd,
 				{
-					description: "Watch traffic to the target version ramp up",
-					//command:       `kubectl get temporalworker --watch --output-watch-events`,
-					command:       `watch --interval 1 --differences kubectl get temporalworker,deploy,pod`,
+					description:   "Watch traffic to the target version ramp up",
+					command:       `kubectl get temporalworker --watch --output-watch-events`,
 					watchDuration: time.Minute,
 				},
 			},
