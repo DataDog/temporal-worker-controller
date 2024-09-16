@@ -1,3 +1,5 @@
+diff --git a/internal/demo/temporal_worker.yaml b/internal/demo/temporal_worker.yaml
+index 3cd9f27..ba1bb2c 100644
 --- a/internal/demo/temporal_worker.yaml
 +++ b/internal/demo/temporal_worker.yaml
 @@ -13,7 +13,20 @@ spec:
