@@ -185,8 +185,9 @@ func main() {
 			[]demoCommand{
 				skaffoldRunCmd,
 				{
-					description:   "Watch traffic to the target version ramp up",
-					command:       `kubectl get temporalworker --watch --output-watch-events`,
+					description: "Watch traffic to the target version ramp up",
+					//command:       `kubectl get temporalworker --watch --output-watch-events`,
+					command:       `watch --interval 1 --differences kubectl get temporalworker,deploy,pod`,
 					watchDuration: time.Minute,
 				},
 			},
