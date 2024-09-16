@@ -1,10 +1,10 @@
 apiVersion: temporal.io/v1alpha1
 kind: TemporalWorker
 metadata:
-  name: sample
+  name: demo
   labels:
     app.kubernetes.io/name: hello-world-worker
-    app.kubernetes.io/instance: sample
+    app.kubernetes.io/instance: demo
 spec:
   # Configuration for connecting to Temporal
   workerOptions:

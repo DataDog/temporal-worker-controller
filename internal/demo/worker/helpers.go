@@ -38,6 +38,7 @@ func newClient(hostPort, namespace, buildID string) (c client.Client, stopFunc f
 	}
 
 	c, err = client.Dial(client.Options{
+		Identity:  os.Getenv("HOSTNAME"),
 		HostPort:  hostPort,
 		Namespace: namespace,
 		Logger:    l,

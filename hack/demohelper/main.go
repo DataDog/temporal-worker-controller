@@ -26,7 +26,7 @@ var (
 var (
 	skaffoldRunCmd      = newCommand(`skaffold run --profile demo`)
 	gitResetWorkflowCmd = newCommand(`git checkout internal/demo/worker/workflow.go`)
-	getWorkerStatusCmd  = newCommand(`kubectl get temporalworker sample -o json | jq .status`)
+	getWorkerStatusCmd  = newCommand(`kubectl get temporalworker demo -o json | jq .status`)
 )
 
 type demoCommand struct {
@@ -119,7 +119,7 @@ func main() {
 		{
 			"Describe the temporalworker custom resource",
 			[]demoCommand{
-				newCommand(`kubectl describe temporalworker sample`),
+				newCommand(`kubectl describe temporalworker demo`),
 			},
 		},
 		{
@@ -163,7 +163,7 @@ func main() {
 		{
 			"Inspect worker status: the deprecated version should still be reachable.",
 			[]demoCommand{
-				newCommand(`kubectl get -o yaml temporalworker sample | yq '.status' | grep -v -E 'apiVersion|resourceVersion|kind|uid|namespace|deployment|name|versionConflictToken' | yq`),
+				newCommand(`kubectl get -o yaml temporalworker demo | yq '.status' | grep -v -E 'apiVersion|resourceVersion|kind|uid|namespace|deployment|name|versionConflictToken' | yq`),
 			},
 		},
 		{
