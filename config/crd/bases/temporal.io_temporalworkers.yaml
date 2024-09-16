@@ -17,11 +17,11 @@ spec:
   - additionalPrinterColumns:
     - description: Default BuildID for new workflows
       jsonPath: .status.defaultVersion.buildID
-      name: Default-Build-ID
+      name: Default
       type: string
     - description: BuildID of the current worker template
       jsonPath: .status.targetVersion.buildID
-      name: Target-Build-ID
+      name: Target
       type: string
     - description: Percentage of new workflows starting on Target BuildID
       jsonPath: .status.targetVersion.rampPercentage

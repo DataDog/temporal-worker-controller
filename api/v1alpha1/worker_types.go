@@ -185,9 +185,10 @@ type QueueStatistics struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
-// +kubebuilder:printcolumn:name="Default-Build-ID",type="string",JSONPath=".status.defaultVersion.buildID",description="Default BuildID for new workflows"
-// +kubebuilder:printcolumn:name="Target-Build-ID",type="string",JSONPath=".status.targetVersion.buildID",description="BuildID of the current worker template"
+// +kubebuilder:printcolumn:name="Default",type="string",JSONPath=".status.defaultVersion.buildID",description="Default BuildID for new workflows"
+// +kubebuilder:printcolumn:name="Target",type="string",JSONPath=".status.targetVersion.buildID",description="BuildID of the current worker template"
 // +kubebuilder:printcolumn:name="Target-Ramp",type="integer",JSONPath=".status.targetVersion.rampPercentage",description="Percentage of new workflows starting on Target BuildID"
+// +kubebuilder:printcolumn:name="ClosedOnly",type="integer",JSONPath=".status.deprecatedVersions[*][?(@.reachability == 'Reachable')]",description="Percentage of new workflows starting on Target BuildID"
 
 // TemporalWorker is the Schema for the temporalworkers API
 //
