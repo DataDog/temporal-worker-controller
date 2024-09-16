@@ -26,8 +26,7 @@ var (
 var (
 	skaffoldRunCmd      = newCommand(`skaffold run --profile demo`)
 	gitResetWorkflowCmd = newCommand(`git checkout internal/demo/worker/workflow.go`)
-	//getWorkerStatusCmd  = newCommand(`kubectl get -o yaml temporalworker sample | yq '.status' | grep -v -E 'apiVersion|resourceVersion|kind|uid|namespace|deployment|name|versionConflictToken' | yq`)
-	getWorkerStatusCmd = newCommand(`kubectl get -o yaml temporalworker sample | yq '.status' | grep -v -E 'apiVersion|resourceVersion|kind|uid|namespace|versionConflictToken' | yq`)
+	getWorkerStatusCmd  = newCommand(`kubectl get temporalworker sample -o json | jq .status`)
 )
 
 type demoCommand struct {
