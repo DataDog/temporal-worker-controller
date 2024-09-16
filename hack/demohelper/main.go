@@ -130,9 +130,9 @@ func main() {
 			},
 		},
 		{
-			description: "Inspect k8s deployents and pods associated with the worker",
+			description: "Inspect k8s deployments and pods associated with the worker",
 			commands: []demoCommand{
-				newCommand(`kubectl get deployments,pods`),
+				newCommand(`kubectl get temporalworker,deployments,pods`),
 			},
 		},
 		{
