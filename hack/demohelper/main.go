@@ -110,7 +110,7 @@ func main() {
 		{
 			"Ensure worker is up to date",
 			[]demoCommand{
-				newCommand(`skaffold run --profile demo`),
+				skaffoldRunCmd,
 				//{
 				//	description: "Check status of k8s resources: there should only be one deployment",
 				//	command:     `kubectl get deployments,pods`,
@@ -153,7 +153,7 @@ func main() {
 				newCommand(`git commit -m "Use workflow.Sleep instead of time.Sleep (no version gate)"`),
 				//newCommand(`git push`),
 				skaffoldRunCmd,
-				demoCommand{
+				{
 					description:   "Watch the deployment roll out",
 					command:       `kubectl get deployments --watch --output-watch-events`,
 					watchDuration: 5 * time.Second,
@@ -180,11 +180,15 @@ func main() {
 			},
 		},
 		{
-			"Make another code change",
-			//[]demoCommand{
-			//	newCommand(`git apply internal/demo/changes/progressive-rollout.patch`),
-			//},
-			nil,
+			"Make another code change and deploy",
+			[]demoCommand{
+				skaffoldRunCmd,
+				{
+					description:   "Watch traffic to the target version ramp up",
+					command:       `kubectl get temporalworker --watch --output-watch-events`,
+					watchDuration: time.Minute,
+				},
+			},
 		},
 		{
 			"Revert the changes",
