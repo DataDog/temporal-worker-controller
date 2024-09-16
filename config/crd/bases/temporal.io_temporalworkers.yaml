@@ -27,10 +27,6 @@ spec:
       jsonPath: .status.targetVersion.rampPercentage
       name: Target-Ramp
       type: integer
-    - description: TODO
-      jsonPath: .status.deprecatedVersions[?(@.reachability=='Reachable')].length()
-      name: Deprecated
-      type: string
     name: v1alpha1
     schema:
       openAPIV3Schema:
@@ -43,6 +39,29 @@ spec:
             type: object
           spec:
             properties:
+              cutover:
+                properties:
+                  steps:
+                    items:
+                      properties:
+                        pauseDuration:
+                          type: string
+                        rampPercentage:
+                          type: integer
+                      required:
+                      - pauseDuration
+                      - rampPercentage
+                      type: object
+                    type: array
+                  strategy:
+                    enum:
+                    - Manual
+                    - AllAtOnce
+                    - Progressive
+                    type: string
+                required:
+                - strategy
+                type: object
               minReadySeconds:
                 format: int32
                 type: integer
@@ -52,28 +71,6 @@ spec:
               replicas:
                 format: int32
                 type: integer
-              rolloutStrategy:
-                properties:
-                  allAtOnce:
-                    type: object
-                  manual:
-                    type: object
-                  progressive:
-                    properties:
-                      steps:
-                        items:
-                          properties:
-                            pauseDuration:
-                              type: string
-                            rampPercentage:
-                              type: integer
-                          required:
-                          - pauseDuration
-                          - rampPercentage
-                          type: object
-                        type: array
-                    type: object
-                type: object
               selector:
                 properties:
                   matchExpressions:
@@ -3741,7 +3738,7 @@ spec:
                 - temporalNamespace
                 type: object
             required:
-            - rolloutStrategy
+            - cutover
             - template
             - workerOptions
             type: object

@@ -170,7 +170,7 @@ func getOldestBuildIDCreateTime(rules *workflowservice.GetWorkerVersioningRulesR
 	return rule.GetCreateTime()
 }
 
-func getVersionConfigDiff(rules *workflowservice.GetWorkerVersioningRulesResponse, strategy *temporaliov1alpha1.RolloutStrategy, status *temporaliov1alpha1.TemporalWorkerStatus) *versionConfig {
+func getVersionConfigDiff(rules *workflowservice.GetWorkerVersioningRulesResponse, strategy temporaliov1alpha1.RolloutStrategy, status *temporaliov1alpha1.TemporalWorkerStatus) *versionConfig {
 	vcfg := getVersionConfig(strategy, status, getOldestBuildIDCreateTime(rules, status.TargetVersion.BuildID))
 	if vcfg == nil {
 		return nil
@@ -202,25 +202,22 @@ func getVersionConfigDiff(rules *workflowservice.GetWorkerVersioningRulesRespons
 	return vcfg
 }
 
-func getVersionConfig(strategy *temporaliov1alpha1.RolloutStrategy, status *temporaliov1alpha1.TemporalWorkerStatus, rampCreateTime *timestamppb.Timestamp) *versionConfig {
-	// Do nothing if rollout strategy is unset or manual
-	if strategy == nil || strategy.Manual != nil {
-		return nil
-	}
+func getVersionConfig(strategy temporaliov1alpha1.RolloutStrategy, status *temporaliov1alpha1.TemporalWorkerStatus, rampCreateTime *timestamppb.Timestamp) *versionConfig {
 	// Do nothing if target version's deployment is not healthy yet
-	if status.TargetVersion.HealthySince == nil {
+	if status == nil || status.TargetVersion.HealthySince == nil {
 		return nil
 	}
 
-	// Set new default version in blue/green rollout mode as soon as next version is healthy
-	if strategy.AllAtOnce != nil {
+	switch strategy.Strategy {
+	case temporaliov1alpha1.UpdateManual:
+		return nil
+	case temporaliov1alpha1.UpdateAllAtOnce:
+		// Set new default version immediately
 		return &versionConfig{
 			setDefault: true,
 		}
-	}
-
-	// Determine the correct percentage ramp
-	if prog := strategy.Progressive; prog != nil {
+	case temporaliov1alpha1.UpdateProgressive:
+		// Determine the correct percentage ramp
 		var (
 			healthyDuration    time.Duration
 			currentRamp        uint8
@@ -229,7 +226,7 @@ func getVersionConfig(strategy *temporaliov1alpha1.RolloutStrategy, status *temp
 		if rampCreateTime != nil {
 			healthyDuration = time.Since(rampCreateTime.AsTime())
 		}
-		for _, s := range prog.Steps {
+		for _, s := range strategy.Steps {
 			if s.RampPercentage != 0 {
 				currentRamp = s.RampPercentage
 			}
