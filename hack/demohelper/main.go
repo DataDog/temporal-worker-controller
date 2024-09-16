@@ -107,75 +107,76 @@ func (ds demoStep) run(ctx context.Context, printFirstCommand bool) error {
 
 func main() {
 	steps := []demoStep{
-		{
-			"Ensure worker is up to date",
-			[]demoCommand{
-				skaffoldRunCmd,
-				//{
-				//	description: "Check status of k8s resources: there should only be one deployment",
-				//	command:     `kubectl get deployments,pods`,
-				//},
-			},
-		},
-		{
-			"Describe the temporalworker custom resource",
-			[]demoCommand{
-				newCommand(`kubectl describe temporalworker sample`),
-			},
-		},
-		{
-			"That's a lot of information! Let's just get the status",
-			[]demoCommand{
-				getWorkerStatusCmd,
-			},
-		},
-		{
-			description: "Inspect k8s deployents and pods associated with the worker",
-			commands: []demoCommand{
-				newCommand(`kubectl get deployments,pods`),
-			},
-		},
-		{
-			"Switch to workflow.Sleep using a patch/version check",
-			[]demoCommand{newCommand(`git apply ./internal/demo/changes/version-gate.patch`)},
-		},
-		{
-			"Remove the patch/version check",
-			[]demoCommand{
-				gitResetWorkflowCmd,
-				newCommand(`git apply ./internal/demo/changes/no-version-gate.patch`),
-			},
-		},
-		{
-			"Deploy the change to workflow.Sleep",
-			[]demoCommand{
-				newCommand(`git add internal/demo/worker/workflow.go`),
-				newCommand(`git commit -m "Use workflow.Sleep instead of time.Sleep (no version gate)"`),
-				//newCommand(`git push`),
-				skaffoldRunCmd,
-				{
-					description:   "Watch the deployment roll out",
-					command:       `kubectl get deployments --watch --output-watch-events`,
-					watchDuration: 5 * time.Second,
-				},
-				newCommand(`kubectl get pods`),
-			},
-		},
-		{
-			"Inspect worker status: the deprecated version should still be reachable.",
-			[]demoCommand{
-				newCommand(`kubectl get -o yaml temporalworker sample | yq '.status' | grep -v -E 'apiVersion|resourceVersion|kind|uid|namespace|deployment|name|versionConflictToken' | yq`),
-			},
-		},
-		{
-			"Observe workflows completing on multiple versions",
-			[]demoCommand{
-				newCommand(`open https://ddstaging.datadoghq.com/dashboard/n7q-tnt-7wt`),
-			},
-		},
+		//{
+		//	"Ensure worker is up to date",
+		//	[]demoCommand{
+		//		skaffoldRunCmd,
+		//		//{
+		//		//	description: "Check status of k8s resources: there should only be one deployment",
+		//		//	command:     `kubectl get deployments,pods`,
+		//		//},
+		//	},
+		//},
+		//{
+		//	"Describe the temporalworker custom resource",
+		//	[]demoCommand{
+		//		newCommand(`kubectl describe temporalworker sample`),
+		//	},
+		//},
+		//{
+		//	"That's a lot of information! Let's just get the status",
+		//	[]demoCommand{
+		//		getWorkerStatusCmd,
+		//	},
+		//},
+		//{
+		//	description: "Inspect k8s deployents and pods associated with the worker",
+		//	commands: []demoCommand{
+		//		newCommand(`kubectl get deployments,pods`),
+		//	},
+		//},
+		//{
+		//	"Switch to workflow.Sleep using a patch/version check",
+		//	[]demoCommand{newCommand(`git apply ./internal/demo/changes/version-gate.patch`)},
+		//},
+		//{
+		//	"Remove the patch/version check",
+		//	[]demoCommand{
+		//		gitResetWorkflowCmd,
+		//		newCommand(`git apply ./internal/demo/changes/no-version-gate.patch`),
+		//	},
+		//},
+		//{
+		//	"Deploy the change to workflow.Sleep",
+		//	[]demoCommand{
+		//		newCommand(`git add internal/demo/worker/workflow.go`),
+		//		newCommand(`git commit -m "Use workflow.Sleep instead of time.Sleep (no version gate)"`),
+		//		//newCommand(`git push`),
+		//		skaffoldRunCmd,
+		//		{
+		//			description:   "Watch the deployment roll out",
+		//			command:       `kubectl get deployments --watch --output-watch-events`,
+		//			watchDuration: 5 * time.Second,
+		//		},
+		//		newCommand(`kubectl get pods`),
+		//	},
+		//},
+		//{
+		//	"Inspect worker status: the deprecated version should still be reachable.",
+		//	[]demoCommand{
+		//		newCommand(`kubectl get -o yaml temporalworker sample | yq '.status' | grep -v -E 'apiVersion|resourceVersion|kind|uid|namespace|deployment|name|versionConflictToken' | yq`),
+		//	},
+		//},
+		//{
+		//	"Observe workflows completing on multiple versions",
+		//	[]demoCommand{
+		//		newCommand(`open https://ddstaging.datadoghq.com/dashboard/n7q-tnt-7wt`),
+		//	},
+		//},
 		{
 			"Apply progressive rollout strategy",
 			[]demoCommand{
+				newCommand(`code internal/demo/temporal_worker.yaml`),
 				newCommand(`git apply internal/demo/changes/progressive-rollout.patch`),
 			},
 		},
@@ -190,10 +191,11 @@ func main() {
 				},
 			},
 		},
+		// Observe new workflows starting on both old and new version in dashboard
 		{
 			"Revert the changes",
 			[]demoCommand{
-				newCommand(`git reset HEAD~1`),
+				//newCommand(`git reset HEAD~1`),
 				gitResetWorkflowCmd,
 				newCommand(`git checkout -- internal/demo/temporal_worker.yaml`),
 				skaffoldRunCmd,
