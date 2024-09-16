@@ -51,8 +51,8 @@ type TemporalWorkerSpec struct {
 	// not be estimated during the time a deployment is paused. Defaults to 600s.
 	ProgressDeadlineSeconds *int32 `json:"progressDeadlineSeconds,omitempty" protobuf:"varint,9,opt,name=progressDeadlineSeconds"`
 
-	// TODO(jlegrone): configure new version rollout strategies (progressive, blue/green, manual)
-	RolloutStrategy *RolloutStrategy `json:"rolloutStrategy"`
+	// How to cut over new workflow executions to the target worker version.
+	RolloutStrategy RolloutStrategy `json:"cutover"`
 
 	// TODO(jlegrone): add godoc
 	WorkerOptions WorkerOptions `json:"workerOptions"`
@@ -144,11 +144,11 @@ type VersionedDeployment struct {
 type DefaultVersionUpdateStrategy string
 
 const (
-	CutoverManual DefaultVersionUpdateStrategy = "Manual"
+	UpdateManual DefaultVersionUpdateStrategy = "Manual"
 
-	CutoverAllAtOnce DefaultVersionUpdateStrategy = "AllAtOnce"
+	UpdateAllAtOnce DefaultVersionUpdateStrategy = "AllAtOnce"
 
-	CutoverProgressive DefaultVersionUpdateStrategy = "Progressive"
+	UpdateProgressive DefaultVersionUpdateStrategy = "Progressive"
 )
 
 // RolloutStrategy defines strategy to apply during next rollout
@@ -160,20 +160,12 @@ type RolloutStrategy struct {
 	// - "Progressive": ramp up the percentage of new workflow executions targeting the new worker version over time.
 	Strategy DefaultVersionUpdateStrategy `json:"strategy"`
 
+	// Steps to execute progressive rollouts. Only required when strategy is "Progressive".
 	// +optional
-	AllAtOnce *AllAtOnceRolloutStrategy `json:"allAtOnce,omitempty"`
-	// +optional
-	Progressive *ProgressiveRolloutStrategy `json:"progressive,omitempty"`
-	// +optional
-	Manual *ManualRolloutStrategy `json:"manual,omitempty"`
+	Steps []RolloutStep `json:"steps,omitempty" protobuf:"bytes,3,rep,name=steps"`
 }
 
 type AllAtOnceRolloutStrategy struct{}
-
-type ProgressiveRolloutStrategy struct {
-	// Steps define the order of phases to execute the canary deployment
-	Steps []RolloutStep `json:"steps,omitempty" protobuf:"bytes,3,rep,name=steps"`
-}
 
 type RolloutStep struct {
 	// RampPercentage indicates what percentage of new workflow executions should be

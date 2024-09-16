@@ -12,8 +12,8 @@ spec:
     temporalNamespace: "default"
     taskQueue: "hello_world"
   # How to cut over new workflow executions to the latest worker version
-  rolloutStrategy:
-    allAtOnce: {}
+  cutover:
+    strategy: AllAtOnce
   # Desired number of worker replicas
   replicas: 1
   # Desired specification for worker pods
