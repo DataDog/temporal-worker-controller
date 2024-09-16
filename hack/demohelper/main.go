@@ -20,7 +20,8 @@ var (
 	//	color.New(color.Bold).Sprint("@"),
 	//	color.New(color.FgGreen, color.Bold).Sprint("replay"),
 	//)
-	fakePromptUser = color.New(color.FgYellow).Sprint("jacob.work/er-versioning")
+	//fakePromptUser = color.New(color.FgYellow).Sprint("jacob.work/er-versioning")
+	fakePromptUser = "🦆"
 )
 
 var (
