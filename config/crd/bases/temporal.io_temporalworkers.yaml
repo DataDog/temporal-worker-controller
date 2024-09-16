@@ -27,6 +27,10 @@ spec:
       jsonPath: .status.targetVersion.rampPercentage
       name: Target-Ramp
       type: integer
+    - description: TODO
+      jsonPath: .status.deprecatedVersions[?(@.reachability=='Reachable')].length()
+      name: Deprecated
+      type: string
     name: v1alpha1
     schema:
       openAPIV3Schema:

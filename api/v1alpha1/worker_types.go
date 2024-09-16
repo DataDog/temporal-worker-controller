@@ -138,8 +138,28 @@ type VersionedDeployment struct {
 	Deployment *v1.ObjectReference `json:"deployment"`
 }
 
+// DefaultVersionUpdateStrategy describes how to cut over new workflow executions
+// to the target worker version.
+// +kubebuilder:validation:Enum=Manual;AllAtOnce;Progressive
+type DefaultVersionUpdateStrategy string
+
+const (
+	CutoverManual DefaultVersionUpdateStrategy = "Manual"
+
+	CutoverAllAtOnce DefaultVersionUpdateStrategy = "AllAtOnce"
+
+	CutoverProgressive DefaultVersionUpdateStrategy = "Progressive"
+)
+
 // RolloutStrategy defines strategy to apply during next rollout
 type RolloutStrategy struct {
+	// Specifies how to treat concurrent executions of a Job.
+	// Valid values are:
+	// - "Manual": do not automatically update the default worker version;
+	// - "AllAtOnce": start 100% of new workflow executions on the new worker version as soon as it's healthy;
+	// - "Progressive": ramp up the percentage of new workflow executions targeting the new worker version over time.
+	Strategy DefaultVersionUpdateStrategy `json:"strategy"`
+
 	// +optional
 	AllAtOnce *AllAtOnceRolloutStrategy `json:"allAtOnce,omitempty"`
 	// +optional
@@ -152,7 +172,6 @@ type AllAtOnceRolloutStrategy struct{}
 
 type ProgressiveRolloutStrategy struct {
 	// Steps define the order of phases to execute the canary deployment
-	// +optional
 	Steps []RolloutStep `json:"steps,omitempty" protobuf:"bytes,3,rep,name=steps"`
 }
 
@@ -188,7 +207,6 @@ type QueueStatistics struct {
 // +kubebuilder:printcolumn:name="Default",type="string",JSONPath=".status.defaultVersion.buildID",description="Default BuildID for new workflows"
 // +kubebuilder:printcolumn:name="Target",type="string",JSONPath=".status.targetVersion.buildID",description="BuildID of the current worker template"
 // +kubebuilder:printcolumn:name="Target-Ramp",type="integer",JSONPath=".status.targetVersion.rampPercentage",description="Percentage of new workflows starting on Target BuildID"
-// +kubebuilder:printcolumn:name="ClosedOnly",type="integer",JSONPath=".status.deprecatedVersions[*][?(@.reachability == 'Reachable')]",description="Percentage of new workflows starting on Target BuildID"
 
 // TemporalWorker is the Schema for the temporalworkers API
 //
