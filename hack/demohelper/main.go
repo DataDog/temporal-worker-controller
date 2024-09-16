@@ -181,8 +181,11 @@ func main() {
 			},
 		},
 		{
-			"Make another code change and deploy",
+			"Make another code change and re-deploy",
 			[]demoCommand{
+				newCommand(`git add internal/demo/worker/workflow.go`),
+				newCommand(`git commit -m "Update activity GetSubject"`),
+				newCommand(`git push`),
 				skaffoldRunCmd,
 				{
 					description: "Watch traffic to the target version ramp up",
@@ -196,7 +199,7 @@ func main() {
 		{
 			"Revert the changes",
 			[]demoCommand{
-				//newCommand(`git reset HEAD~1`),
+				newCommand(`git reset HEAD~1`),
 				gitResetWorkflowCmd,
 				newCommand(`git checkout -- internal/demo/temporal_worker.yaml`),
 				skaffoldRunCmd,
