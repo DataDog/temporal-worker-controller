@@ -59,13 +59,13 @@ func newClient(hostPort, namespace, buildID string) (c client.Client, stopFunc f
 }
 
 func configureObservability(buildID string) (l log.Logger, stopFunc func()) {
-	go func() {
-		// Delay pod readiness by 10 seconds
-		time.Sleep(10 * time.Second)
-		http.ListenAndServe("0.0.0.0:8080", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-		}))
-	}()
+	// Delay pod readiness by 5 seconds
+	// time.Sleep(5 * time.Second)
+	if err := http.ListenAndServe("0.0.0.0:8080", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})); err != nil {
+		panic(err)
+	}
 
 	if err := profiler.Start(
 		profiler.WithVersion(buildID),
