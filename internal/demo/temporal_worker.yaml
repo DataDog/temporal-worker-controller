@@ -32,7 +32,6 @@ spec:
               ]
             }
           }
-        generation: "1"
     spec:
       containers:
         - name: main
