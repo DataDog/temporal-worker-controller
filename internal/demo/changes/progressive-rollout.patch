@@ -12,12 +12,10 @@ index 3cd9f27..ba1bb2c 100644
 +        # Set initial traffic to 1% and wait 5 seconds
 +      - rampPercentage: 1
 +        pauseDuration: 5s
-+        # Increase traffic to 5% and wait 10 seconds
 +      - rampPercentage: 5
-+        pauseDuration: 10s
-+        # Increase traffic to 10% and wait 30 seconds
++        pauseDuration: 5s
 +      - rampPercentage: 10
-+        pauseDuration: 30s
++        pauseDuration: 5s
 +        # Increase traffic to 50% and wait 1 minute
 +      - rampPercentage: 50
 +        pauseDuration: 1m
