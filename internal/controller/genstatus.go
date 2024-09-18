@@ -133,7 +133,7 @@ func (c *versionedDeploymentCollection) addReachability(buildID string, info *ta
 		totalStats.TasksDispatchRate += stat.GetStats().GetTasksDispatchRate()
 	}
 	// TODO(jlegrone): Register stats after supported by temporal server
-	//c.stats[buildID] = totalStats
+	c.stats[buildID] = totalStats
 
 	return nil
 }
@@ -196,11 +196,19 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, l logr.Lo
 
 		// TODO(jlegrone): Do rules need to be sorted by create time?
 
-		// Set the default build ID if this is the first assignment rule without
-		// a ramp.
-		if defaultBuildID == "" && rule.GetRule().GetRamp() == nil {
-			defaultBuildID = ruleTargetBuildID
-			continue
+		// Only update defaultBuildID if it's not already set
+		if defaultBuildID == "" {
+			if rule.GetRule().GetRamp() == nil {
+				// Set the default build ID if this is the first assignment rule without
+				// a ramp.
+				defaultBuildID = ruleTargetBuildID
+				continue
+			} else if rule.GetRule().GetPercentageRamp().GetRampPercentage() == 100 {
+				// If the default build ID has a ramp of 100%, then it's the default
+				// build ID.
+				defaultBuildID = ruleTargetBuildID
+				continue
+			}
 		}
 		// Don't mark the desired build ID as deprecated
 		if ruleTargetBuildID == desiredBuildID {
@@ -256,6 +264,9 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, l logr.Lo
 		defaultVersion = versions.getVersionedDeployment(defaultBuildID)
 		targetVersion  = versions.getVersionedDeployment(desiredBuildID)
 	)
+
+	fmt.Println("DEFAULT", defaultVersion)
+	fmt.Println("TARGET", targetVersion)
 
 	// Ugly hack to clear ramp percentages (not quite correctly) for now
 	for _, d := range deprecatedVersions {

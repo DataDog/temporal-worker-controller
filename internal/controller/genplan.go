@@ -190,7 +190,7 @@ func getVersionConfigDiff(rules *workflowservice.GetWorkerVersioningRulesRespons
 	if first.GetTargetBuildId() == vcfg.buildID {
 		ramp := first.GetPercentageRamp()
 		// Skip making changes if build id is already the default
-		if ramp == nil {
+		if ramp == nil || ramp.GetRampPercentage() == 100 {
 			return nil
 		}
 		// Skip making changes if ramp is already set to the desired value
@@ -301,8 +301,10 @@ func newDeploymentWithoutOwnerRef(
 	for i, container := range spec.Template.Spec.Containers {
 		container.Env = append(container.Env,
 			v1.EnvVar{
-				Name:  "TEMPORAL_HOST_PORT",
-				Value: connection.HostPort,
+				Name: "TEMPORAL_HOST_PORT",
+				//Value: connection.HostPort,
+				// TODO(jlegrone): Remove this
+				Value: "host.minikube.internal:7233",
 			},
 			v1.EnvVar{
 				Name:  "TEMPORAL_NAMESPACE",
