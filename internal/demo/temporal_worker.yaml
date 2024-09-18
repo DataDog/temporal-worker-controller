@@ -20,7 +20,7 @@ spec:
   template:
     metadata:
       annotations:
-        force-new-version: "0"
+        force-new-version: "1"
         ad.datadoghq.com/main.checks: |
           {
             "openmetrics": {
