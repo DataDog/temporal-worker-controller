@@ -202,8 +202,8 @@ type QueueStatistics struct {
 //+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 //+kubebuilder:printcolumn:name="Backlog-Age",type="string",JSONPath=".status.defaultVersion.statistics.approximateBacklogAge"
 //+kubebuilder:printcolumn:name="Backlog-Count",type="string",JSONPath=".status.defaultVersion.statistics.approximateBacklogCount"
-//+kubebuilder:printcolumn:name="Task-Add-Rate",type="string",JSONPath=".status.defaultVersion.statistics.tasksAddRate"
-//+kubebuilder:printcolumn:name="Task-Dispatch-Rate",type="string",JSONPath=".status.defaultVersion.statistics.tasksDispatchRate"
+//+kubebuilder:printcolumn:name="Task-Add-Rate",type="string",JSONPath=".status.defaultVersion.statistics.tasksAddRate",priority=1
+//+kubebuilder:printcolumn:name="Task-Dispatch-Rate",type="string",JSONPath=".status.defaultVersion.statistics.tasksDispatchRate",priority=1
 
 // TemporalWorker is the Schema for the temporalworkers API
 //

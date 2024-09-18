@@ -38,9 +38,11 @@ spec:
       type: string
     - jsonPath: .status.defaultVersion.statistics.tasksAddRate
       name: Task-Add-Rate
+      priority: 1
       type: string
     - jsonPath: .status.defaultVersion.statistics.tasksDispatchRate
       name: Task-Dispatch-Rate
+      priority: 1
       type: string
     name: v1alpha1
     schema:
