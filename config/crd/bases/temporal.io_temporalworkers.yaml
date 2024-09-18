@@ -36,6 +36,12 @@ spec:
     - jsonPath: .status.defaultVersion.statistics.approximateBacklogCount
       name: Backlog-Count
       type: string
+    - jsonPath: .status.defaultVersion.statistics.tasksAddRate
+      name: Task-Add-Rate
+      type: string
+    - jsonPath: .status.defaultVersion.statistics.tasksDispatchRate
+      name: Task-Dispatch-Rate
+      type: string
     name: v1alpha1
     schema:
       openAPIV3Schema:

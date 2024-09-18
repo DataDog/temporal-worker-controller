@@ -20,7 +20,6 @@ spec:
   template:
     metadata:
       annotations:
-        generation: "1"
         ad.datadoghq.com/main.checks: |
           {
             "openmetrics": {
