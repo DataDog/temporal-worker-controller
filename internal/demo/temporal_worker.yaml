@@ -15,11 +15,12 @@ spec:
   cutover:
     strategy: AllAtOnce
   # Desired number of worker replicas
-  replicas: 1
+  replicas: 0
   # Desired specification for worker pods
   template:
     metadata:
       annotations:
+        generation: "1"
         ad.datadoghq.com/main.checks: |
           {
             "openmetrics": {

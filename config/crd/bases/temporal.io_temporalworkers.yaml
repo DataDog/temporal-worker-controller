@@ -3791,6 +3791,11 @@ spec:
                         type: number
                       tasksDispatchRate:
                         type: number
+                    required:
+                    - approximateBacklogAge
+                    - approximateBacklogCount
+                    - tasksAddRate
+                    - tasksDispatchRate
                     type: object
                 required:
                 - buildID
@@ -3841,6 +3846,11 @@ spec:
                           type: number
                         tasksDispatchRate:
                           type: number
+                      required:
+                      - approximateBacklogAge
+                      - approximateBacklogCount
+                      - tasksAddRate
+                      - tasksDispatchRate
                       type: object
                   required:
                   - buildID
@@ -3891,6 +3901,11 @@ spec:
                         type: number
                       tasksDispatchRate:
                         type: number
+                    required:
+                    - approximateBacklogAge
+                    - approximateBacklogCount
+                    - tasksAddRate
+                    - tasksDispatchRate
                     type: object
                 required:
                 - buildID

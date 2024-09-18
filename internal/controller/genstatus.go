@@ -265,9 +265,6 @@ func (r *TemporalWorkerReconciler) generateStatus(ctx context.Context, l logr.Lo
 		targetVersion  = versions.getVersionedDeployment(desiredBuildID)
 	)
 
-	fmt.Println("DEFAULT", defaultVersion)
-	fmt.Println("TARGET", targetVersion)
-
 	// Ugly hack to clear ramp percentages (not quite correctly) for now
 	for _, d := range deprecatedVersions {
 		d.RampPercentage = nil
