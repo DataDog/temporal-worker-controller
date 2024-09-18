@@ -129,12 +129,12 @@ func main() {
 		//		getWorkerStatusCmd,
 		//	},
 		//},
-		{
-			description: "Inspect k8s deployments and pods associated with the worker",
-			commands: []demoCommand{
-				newCommand(`kubectl get temporalworker,deployments,pods`),
-			},
-		},
+		//{
+		//	description: "Inspect k8s deployments and pods associated with the worker",
+		//	commands: []demoCommand{
+		//		newCommand(`kubectl get temporalworker,deployments,pods`),
+		//	},
+		//},
 		{
 			"Switch to workflow.Sleep using a patch/version check",
 			[]demoCommand{newCommand(`git apply ./internal/demo/changes/version-gate.patch`)},
@@ -152,7 +152,7 @@ func main() {
 				newCommand(`git add internal/demo/worker/workflow.go`),
 				newCommand(`git commit -m "Use workflow.Sleep instead of time.Sleep (no version gate)"`),
 				newCommand(`git push`),
-				//skaffoldRunCmd,
+				skaffoldRunCmd,
 				//{
 				//	description:   "Watch the deployment roll out",
 				//	command:       `kubectl get deployments --watch --output-watch-events`,
@@ -192,11 +192,11 @@ func main() {
 				newCommand(`git commit -m "Update activity GetSubject"`),
 				newCommand(`git push`),
 				skaffoldRunCmd,
-				{
-					description:   "Watch traffic to the target version ramp up",
-					command:       `kubectl get temporalworker --watch --output-watch-events`,
-					watchDuration: 2 * time.Minute,
-				},
+				//{
+				//	description:   "Watch traffic to the target version ramp up",
+				//	command:       `kubectl get temporalworker --watch --output-watch-events`,
+				//	watchDuration: 2 * time.Minute,
+				//},
 			},
 		},
 		// Observe new workflows starting on both old and new version in dashboard
