@@ -161,13 +161,13 @@ func main() {
 				//newCommand(`kubectl get pods`),
 			},
 		},
-		{
-			"Inspect worker status: the deprecated version should still be reachable.",
-			[]demoCommand{
-				//newCommand(`kubectl get -o yaml temporalworker demo | yq '.status' | grep -v -E 'apiVersion|resourceVersion|kind|uid|namespace|deployment|name|versionConflictToken' | yq`),
-				getWorkerStatusCmd,
-			},
-		},
+		//{
+		//	"Inspect worker status: the deprecated version should still be reachable.",
+		//	[]demoCommand{
+		//		//newCommand(`kubectl get -o yaml temporalworker demo | yq '.status' | grep -v -E 'apiVersion|resourceVersion|kind|uid|namespace|deployment|name|versionConflictToken' | yq`),
+		//		getWorkerStatusCmd,
+		//	},
+		//},
 		//{
 		//	"Observe workflow starts and completions",
 		//	[]demoCommand{
