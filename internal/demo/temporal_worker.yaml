@@ -15,7 +15,7 @@ spec:
   cutover:
     strategy: AllAtOnce
   # Desired number of worker replicas
-  replicas: 0
+  replicas: 1
   # Desired specification for worker pods
   template:
     metadata:
