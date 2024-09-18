@@ -45,5 +45,4 @@ kind: TemporalConnection
 metadata:
   name: dev-server
 spec:
-  # hostPort: "host.minikube.internal:7233"
-  hostPort: "localhost:7233"
+  hostPort: "host.minikube.internal:7233"

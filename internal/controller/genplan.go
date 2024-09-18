@@ -301,10 +301,8 @@ func newDeploymentWithoutOwnerRef(
 	for i, container := range spec.Template.Spec.Containers {
 		container.Env = append(container.Env,
 			v1.EnvVar{
-				Name: "TEMPORAL_HOST_PORT",
-				//Value: connection.HostPort,
-				// TODO(jlegrone): Remove this
-				Value: "host.minikube.internal:7233",
+				Name:  "TEMPORAL_HOST_PORT",
+				Value: connection.HostPort,
 			},
 			v1.EnvVar{
 				Name:  "TEMPORAL_NAMESPACE",
