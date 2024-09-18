@@ -30,6 +30,12 @@ spec:
     - jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
+    - jsonPath: .status.defaultVersion.statistics.approximateBacklogAge
+      name: Backlog-Age
+      type: string
+    - jsonPath: .status.defaultVersion.statistics.approximateBacklogCount
+      name: Backlog-Count
+      type: string
     name: v1alpha1
     schema:
       openAPIV3Schema:
@@ -3791,11 +3797,6 @@ spec:
                         type: number
                       tasksDispatchRate:
                         type: number
-                    required:
-                    - approximateBacklogAge
-                    - approximateBacklogCount
-                    - tasksAddRate
-                    - tasksDispatchRate
                     type: object
                 required:
                 - buildID
@@ -3846,11 +3847,6 @@ spec:
                           type: number
                         tasksDispatchRate:
                           type: number
-                      required:
-                      - approximateBacklogAge
-                      - approximateBacklogCount
-                      - tasksAddRate
-                      - tasksDispatchRate
                       type: object
                   required:
                   - buildID
@@ -3901,11 +3897,6 @@ spec:
                         type: number
                       tasksDispatchRate:
                         type: number
-                    required:
-                    - approximateBacklogAge
-                    - approximateBacklogCount
-                    - tasksAddRate
-                    - tasksDispatchRate
                     type: object
                 required:
                 - buildID

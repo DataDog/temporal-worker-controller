@@ -183,15 +183,15 @@ type ManualRolloutStrategy struct{}
 type QueueStatistics struct {
 	// The approximate number of tasks backlogged in this task queue. May count expired tasks but eventually converges
 	// to the right value.
-	ApproximateBacklogCount int64 `json:"approximateBacklogCount"`
+	ApproximateBacklogCount int64 `json:"approximateBacklogCount,omitempty"`
 	// Approximate age of the oldest task in the backlog based on the creation timestamp of the task at the head of the queue.
-	ApproximateBacklogAge metav1.Duration `json:"approximateBacklogAge"`
+	ApproximateBacklogAge metav1.Duration `json:"approximateBacklogAge,omitempty"`
 	// Approximate tasks per second added to the task queue based on activity within a fixed window. This includes both backlogged and
 	// sync-matched tasks.
-	TasksAddRate float32 `json:"tasksAddRate"`
+	TasksAddRate float32 `json:"tasksAddRate,omitempty"`
 	// Approximate tasks per second dispatched to workers based on activity within a fixed window. This includes both backlogged and
 	// sync-matched tasks.
-	TasksDispatchRate float32 `json:"tasksDispatchRate"`
+	TasksDispatchRate float32 `json:"tasksDispatchRate,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -200,6 +200,8 @@ type QueueStatistics struct {
 //+kubebuilder:printcolumn:name="Target",type="string",JSONPath=".status.targetVersion.buildID",description="BuildID of the current worker template"
 //+kubebuilder:printcolumn:name="Target-Ramp",type="integer",JSONPath=".status.targetVersion.rampPercentage",description="Percentage of new workflows starting on Target BuildID"
 //+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+//+kubebuilder:printcolumn:name="Backlog-Age",type="string",JSONPath=".status.defaultVersion.statistics.approximateBacklogAge"
+//+kubebuilder:printcolumn:name="Backlog-Count",type="string",JSONPath=".status.defaultVersion.statistics.approximateBacklogCount"
 
 // TemporalWorker is the Schema for the temporalworkers API
 //
