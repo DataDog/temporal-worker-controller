@@ -98,8 +98,8 @@ func configureObservability(buildID string) (l log.Logger, stopFunc func()) {
 	return l, func() {
 		tracer.Stop()
 		profiler.Stop()
-		// Wait a few seconds before shutting down to ensure metrics etc have been flushed.
-		time.Sleep(10 * time.Second)
+		// Wait a couple seconds before shutting down to ensure metrics etc have been flushed.
+		time.Sleep(2 * time.Second)
 	}
 }
 
