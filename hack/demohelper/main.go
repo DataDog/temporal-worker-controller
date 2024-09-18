@@ -117,18 +117,18 @@ func main() {
 				//},
 			},
 		},
-		{
-			"Describe the temporalworker custom resource",
-			[]demoCommand{
-				newCommand(`kubectl describe temporalworker demo`),
-			},
-		},
-		{
-			"That's a lot of information! Let's just get the status",
-			[]demoCommand{
-				getWorkerStatusCmd,
-			},
-		},
+		//{
+		//	"Describe the temporalworker custom resource",
+		//	[]demoCommand{
+		//		newCommand(`kubectl describe temporalworker demo`),
+		//	},
+		//},
+		//{
+		//	"That's a lot of information! Let's just get the status",
+		//	[]demoCommand{
+		//		getWorkerStatusCmd,
+		//	},
+		//},
 		{
 			description: "Inspect k8s deployments and pods associated with the worker",
 			commands: []demoCommand{
@@ -151,14 +151,14 @@ func main() {
 			[]demoCommand{
 				newCommand(`git add internal/demo/worker/workflow.go`),
 				newCommand(`git commit -m "Use workflow.Sleep instead of time.Sleep (no version gate)"`),
-				//newCommand(`git push`),
-				skaffoldRunCmd,
-				{
-					description:   "Watch the deployment roll out",
-					command:       `kubectl get deployments --watch --output-watch-events`,
-					watchDuration: 5 * time.Second,
-				},
-				newCommand(`kubectl get pods`),
+				newCommand(`git push`),
+				//skaffoldRunCmd,
+				//{
+				//	description:   "Watch the deployment roll out",
+				//	command:       `kubectl get deployments --watch --output-watch-events`,
+				//	watchDuration: 5 * time.Second,
+				//},
+				//newCommand(`kubectl get pods`),
 			},
 		},
 		{
@@ -168,16 +168,16 @@ func main() {
 				getWorkerStatusCmd,
 			},
 		},
-		{
-			"Observe workflow starts and completions",
-			[]demoCommand{
-				newCommand(`open https://ddstaging.datadoghq.com/dashboard/n7q-tnt-7wt`),
-				// Click "view related workflow executions" to pivot to temporal UI
-				// Observe that count of open workflows at this version is decreasing with each refresh
-				// Switch to watch output in terminal
-				// Observe original worker version's deployment scale to zero two minutes after new version was created
-			},
-		},
+		//{
+		//	"Observe workflow starts and completions",
+		//	[]demoCommand{
+		//		newCommand(`open https://ddstaging.datadoghq.com/dashboard/n7q-tnt-7wt`),
+		//		// Click "view related workflow executions" to pivot to temporal UI
+		//		// Observe that count of open workflows at this version is decreasing with each refresh
+		//		// Switch to watch output in terminal
+		//		// Observe original worker version's deployment scale to zero two minutes after new version was created
+		//	},
+		//},
 		{
 			"Apply progressive rollout strategy",
 			[]demoCommand{
