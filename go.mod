@@ -14,7 +14,7 @@ require (
 	github.com/onsi/gomega v1.34.2
 	github.com/stretchr/testify v1.9.0
 	go.temporal.io/api v1.39.0
-	go.temporal.io/sdk v1.29.0
+	go.temporal.io/sdk v1.29.1
 	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0
 	google.golang.org/protobuf v1.34.2
 	k8s.io/api v0.31.0
